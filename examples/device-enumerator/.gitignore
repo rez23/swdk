@@ -1,0 +1,6 @@
+external
+target
+*.cer*
+*.wew
+windbg*
+*.zip

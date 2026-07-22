@@ -1,0 +1,51 @@
+[package]
+name = "swdk"
+version = "0.1.0"
+edition = "2024"
+
+[package.metadata.wdk.driver-model]
+driver-type = "KMDF"
+kmdf-version-major = 1
+target-kmdf-version-minor = 33
+
+[dependencies]
+wdk = { git = "https://github.com/microsoft/windows-drivers-rs.git", branch = "main", optional = true }
+wdk-alloc = { git = "https://github.com/microsoft/windows-drivers-rs.git", branch = "main", optional = true }
+wdk-sys = { git = "https://github.com/microsoft/windows-drivers-rs.git", branch = "main", optional = true }
+wdk-panic = { git = "https://github.com/microsoft/windows-drivers-rs.git", branch = "main", optional = true }
+paste = "1.0.15"
+
+[build-dependencies]
+wdk-build = { git = "https://github.com/microsoft/windows-drivers-rs.git", branch = "main"}
+
+[features]
+wdk-nightly = [
+    "wdk/nightly",
+    "wdk-sys/nightly",
+    "wdk-build/nightly"
+]
+wdk-deps = [
+    "dep:wdk-panic",
+    "dep:wdk",
+    "dep:wdk-alloc",
+    "dep:wdk-sys",
+]
+wdk-runtime = ["wdk-deps", "wdk-nightly"]
+test-runtime = []
+nightly = ["wdk-nightly"]
+hid = ["wdk-sys/hid"]
+gpio = ["wdk-sys/gpio"]
+parallel-ports = ["wdk-sys/parallel-ports"]
+test-stubs = ["wdk-sys/test-stubs"]
+usb = ["wdk-sys/usb"]
+storage = ["wdk-sys/storage"]
+
+[profile.dev]
+panic = "abort"
+opt-level = 0
+debug = 2
+
+[profile.release]
+lto = true
+panic = "abort"
+

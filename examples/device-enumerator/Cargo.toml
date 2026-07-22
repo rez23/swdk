@@ -1,0 +1,31 @@
+[package]
+name = "device-enumerator"
+version = "0.1.0"
+edition = "2024"
+
+[package.metadata.wdk.driver-model]
+driver-type = "KMDF"
+kmdf-version-major = 1
+target-kmdf-version-minor = 33
+
+[lib]
+crate-type = ["cdylib"]
+
+[build-dependencies]
+wdk-build = "0.5.1"
+
+[dependencies]
+wdk-sys = { git = "https://github.com/microsoft/windows-drivers-rs.git", branch = "main" }
+swdk = {path = "../../swdk"}
+
+[features]
+default = ["swdk/hid", "swdk/wdk-runtime"]
+
+[profile.dev]
+panic = "abort"
+opt-level = 0
+debug = 2
+
+[profile.release]
+lto = true
+panic = "abort"
