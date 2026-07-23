@@ -1,8 +1,0 @@
-edition = "2024"
-binop_separator = "Back"
-max_width = 60
-format_macro_matchers = true
-format_macro_bodies = true
-unstable_features = true
-imports_granularity = "Module"
-group_imports = "StdExternalCrate"

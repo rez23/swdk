@@ -1,4 +1,4 @@
-#![cfg_attr(feature = "wdk-runtime", no_std)]
+#![cfg_attr(feature = "kmdf-runtime", no_std)]
 /*#![feature(
     //trait_alias,
     //lazy_type_alias,
@@ -9,37 +9,62 @@
     //negative_impls
     //impl_trait_in_assoc_type,
 )]*/
-#[cfg(any(
-    all(not(feature = "test-runtime"), not(feature = "wdk-runtime")),
-    all(feature = "test-runtime", feature = "wdk-runtime"),
-))]
+#[cfg(all(not(feature = "test-runtime"), not(feature = "kmdf-runtime")))]
 compile_error!(
-    "No runtime selected. Enable either `wdk-runtime` or `test-runtime`"
+    "Multiple runtime behavior selected. Select only one! ('kmdf-runtime', 'test-runtime')"
 );
+
+#[cfg(all(feature = "test-runtime", feature = "kmdf-runtime"))]
+compile_error!(
+    "Select a valid runtime behavior for swdk. ('kmdf-runtime', 'test-runtime')"
+);
+
 pub extern crate alloc;
 
 mod runtime;
-mod wdf;
-pub mod rt {
-    pub use crate::runtime::*;
 
-    #[cfg(feature = "wdk-runtime")]
-    mod wdk_runtime {
+pub(crate) mod wdf;
+
+pub mod rt {
+    #[cfg(feature = "kmdf-runtime")]
+    mod __kmdf {
         pub use wdk;
-        pub use wdk_alloc::WdkAllocator;
         pub use wdk_sys;
+        pub use wdk_alloc;
 
         pub extern crate wdk_panic;
+
+        #[cfg(feature = "kmdf-runtime")]
+        pub use crate::runtime::logging;
+
+        pub use crate::runtime::utils;
+
+        pub(crate) use crate::runtime::kmdf;
     }
 
-    #[cfg(feature = "wdk-runtime")]
-    pub use wdk_runtime::*;
+    #[cfg(feature = "kmdf-runtime")]
+    pub use __kmdf::*;
+
+    #[cfg(feature = "test-runtime")]
+    pub use crate::runtime::test::*;
 }
 
-#[cfg(feature = "wdk-runtime")]
 #[doc(hidden)]
 pub use paste::paste as __swdk_paste;
-pub use wdf::*;
-pub use wdf::handle::*;
-#[cfg(feature = "wdk-runtime")]
+
+#[cfg(feature = "kmdf-runtime")]
 pub use wdk::println;
+
+mod __public_api {
+    pub use crate::wdf::handle::*;
+
+    pub use crate::wdf::values as val;
+    pub use crate::wdf::generators as gens;
+    pub use crate::wdf::context as ctx;
+    pub use crate::wdf::builders as bd;
+    pub use crate::wdf::operators as op;
+    
+    pub use crate::wdf::ioctl;
+}
+
+pub use __public_api::*;

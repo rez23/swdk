@@ -1,19 +1,35 @@
-mod private {
-    /// Map `$crate::rt::wdk_sys::call_unsafe_wdf_function_binding!` to a `Result`
-    /// This permits to use the macro in a `?` context
-    /// # Example
-    /// ```
-    /// unsafe {
-    ///     call_ntstatus_wdf_binding!(
-    ///         WdfDeviceCreate,
-    ///         &raw mut device_init,
-    ///         &raw mut attrs,
-    ///         &raw mut device_handle)
-    /// }?;
-    /// ```
-    #[cfg(feature = "wdk-runtime")]
-    #[macro_export]
-    macro_rules! call_ntstatus_wdf_unsafe_binding {
+#[cfg(feature = "kmdf-runtime")]
+pub mod __cmd {
+    use core::ffi::c_void;
+    use wdk_sys::{call_unsafe_wdf_function_binding, PCWDF_OBJECT_CONTEXT_TYPE_INFO, WDFOBJECT};
+
+    #[inline]
+    #[expect(clippy::missing_safety_doc, reason="This function only exist to expose this wdf binding to macros")]
+    pub unsafe fn __wdf_object_typed_ctx_worker(
+        wdf_obj: WDFOBJECT,
+        p_type_info: PCWDF_OBJECT_CONTEXT_TYPE_INFO,
+    ) -> *mut c_void {
+        call_unsafe_wdf_function_binding!(
+                WdfObjectGetTypedContextWorker,
+                wdf_obj,
+                p_type_info,
+            )
+    }
+}
+
+/// Map `$crate::rt::wdk_sys::call_unsafe_wdf_function_binding!` to a `Result`
+/// This permits to use the macro in a `?` context
+/// # Example
+/// ```
+/// unsafe {
+///     call_ntstatus_wdf_binding!(
+///         WdfDeviceCreate,
+///         &raw mut device_init,
+///         &raw mut attrs,
+///         &raw mut device_handle)
+/// }?;
+/// ```
+macro_rules! call_ntstatus_wdf_unsafe_binding {
     ($func:ident $(, $args:expr )* $(,)?) => {{
         $crate::rt::logging::ntstatus_to_result(
             $crate::rt::wdk_sys::call_unsafe_wdf_function_binding!(
@@ -22,7 +38,7 @@ mod private {
             )
         )}};
     }
-}
+pub(crate) use call_ntstatus_wdf_unsafe_binding;
 
 /// Macro to declare a WDF (Windows Driver Framework) context descriptor for a specific type.
 ///
@@ -73,9 +89,9 @@ mod private {
 ///      - Retrieval of the context type's name using `wdf_type_name`.
 ///
 /// # Usage in different runtimes
-/// The generated code supports both `test-runtime` and `wdk-runtime` configurations:
+/// The generated code supports both `test-runtime` and `kmdf-runtime` configurations:
 /// - `test-runtime`: Marks relevant functions as unimplemented.
-/// - `wdk-runtime`: Leverages WDF APIs to perform runtime kernel-level operations.
+/// - `kmdf-runtime`: Leverages WDF APIs to perform runtime kernel-level operations.
 ///
 /// # Safety
 /// All unsafe operations are encapsulated and designed to comply with WDF and Rust's ownership
@@ -92,17 +108,14 @@ mod private {
 /// This is needed because the internal call to wdk `unsafe_wdf_function_bindings!`
 /// Because of a lak inside the original wdk macro declaration, this macro will call wdk directly,
 /// making it impossible using reexported wdk from swdk.
-#[cfg(any(feature = "test-runtime", feature = "wdk-runtime"))]
+#[cfg(any(feature = "test-runtime", feature = "kmdf-runtime"))]
 #[macro_export]
 macro_rules! declare_ctx_descriptor {
     ($context_type:ty) => {
-        use $crate::*;
-        use $crate::operators::*;
-
         #[doc = concat!("A static struct internally used by WDF to instruct the kernel on how to create contexts of type: `",stringify!($context_type),"`")]
         #[unsafe(link_section = ".data")]
         $crate::__swdk_paste! {
-            pub static [<WDF_ $context_type:snake:upper _TYPE_INFO>]: $crate::context::WdfObjCtxTypeInfo = $crate::context::WdfObjCtxTypeInfo::new(
+            pub static [<WDF_ $context_type:snake:upper _TYPE_INFO>]: $crate::ctx::WdfObjCtxTypeInfo = $crate::ctx::WdfObjCtxTypeInfo::new(
                 $crate::rt::wdk_sys::WDF_OBJECT_CONTEXT_TYPE_INFO {
                     Size: $crate::const_size_to_ulong!($crate::rt::wdk_sys::WDF_OBJECT_CONTEXT_TYPE_INFO),
                     ContextName: concat!(stringify!($context_type),'\0').as_bytes().as_ptr().cast(),
@@ -115,9 +128,10 @@ macro_rules! declare_ctx_descriptor {
             );
         }
 
-        impl $crate::operators::AsCtxDesc for $context_type {
+        impl $crate::op::AsCtxDesc for $context_type {
             #[doc = concat!("Get a ptr to the WDF unique descriptor of`", stringify!($context_type), "`")]
             fn unique() -> core::option::Option<$crate::rt::wdk_sys::PCWDF_OBJECT_CONTEXT_TYPE_INFO> {
+                use $crate::op::*;
                 let unique = unsafe {
                     $crate::__swdk_paste!{[<WDF_ $context_type:snake:upper _TYPE_INFO>].unique()}
                 };
@@ -126,29 +140,31 @@ macro_rules! declare_ctx_descriptor {
 
             #[doc = concat!("Get a `const` ptr view on kernel allocated `", stringify!($context_type), "` associated with [`obj`]")]
             fn wdf_get<O>(obj: $crate::HandleRef<O>) -> core::option::Option<$crate::HandleRef<Self>> {
-                 let ptr: *const $context_type = unsafe {
-                    use $crate::rt::wdk_sys;
+                use $crate::op::*;
+                let ptr: *const $context_type = unsafe {
                     let unique = Self::unique()?;
-                    $crate::rt::wdk_sys::call_unsafe_wdf_function_binding!(
-                        WdfObjectGetTypedContextWorker,
-                        core::ptr::from_ref(obj.as_ref()) as $crate::rt::wdk_sys::WDFOBJECT,
+                    let p_obj = core::ptr::from_ref(obj.as_ref()) as $crate::rt::wdk_sys::WDFOBJECT;
+
+                    $crate::gens::__cmd::__wdf_object_typed_ctx_worker(
+                        p_obj,
                         unique,
                     ).cast()
-                 };
+                };
 
-                 (!ptr.is_null()).then(|| unsafe {
+                (!ptr.is_null()).then(|| unsafe {
                     $crate::HandleRef::new(&*ptr)
-                 })
+                })
             }
 
             #[doc = concat!("Get a `mut` ptr view on kernel allocated instance of `", stringify!($context_type), "` associated with [`obj`]")]
             fn wdf_get_mut<O>(obj: $crate::HandleRef<O>) -> core::option::Option<$crate::HandleMut<Self>> {
+                use $crate::op::*;
                 let ptr: *mut $context_type = unsafe {
-                    use $crate::rt::wdk_sys;
                     let unique = Self::unique()?;
-                    $crate::rt::wdk_sys::call_unsafe_wdf_function_binding!(
-                        WdfObjectGetTypedContextWorker,
-                        core::ptr::from_ref(obj.as_ref()) as $crate::rt::wdk_sys::WDFOBJECT,
+                    let p_obj = core::ptr::from_ref(obj.as_ref()) as $crate::rt::wdk_sys::WDFOBJECT;
+
+                    $crate::gens::__cmd::__wdf_object_typed_ctx_worker(
+                        p_obj,
                         unique,
                     ).cast()
                 };
@@ -167,15 +183,15 @@ macro_rules! declare_ctx_descriptor {
     }
 }
 #[cfg(any(
-    all(not(feature = "test-runtime"), not(feature = "wdk-runtime")),
-    all(feature = "test-runtime", feature = "wdk-runtime"),
+    all(not(feature = "test-runtime"), not(feature = "kmdf-runtime")),
+    all(feature = "test-runtime", feature = "kmdf-runtime"),
 ))]
 #[macro_export]
 macro_rules! declare_ctx_descriptor {
     ($context_type:ty) => {{
         compile_error!(
          "You need to one and only once valid runtime to declare context objects!
-         you can use `test-runtime` or `wdk-runtime` feature to enable one")
+         you can use `test-runtime` or `kmdf-runtime` feature to enable one")
     }}
 }
 

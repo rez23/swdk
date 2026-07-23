@@ -10,10 +10,10 @@ mod _operators {
     #[cfg(feature = "test-runtime")]
     use crate::rt::test_rt::*;
 
-    use crate::builders::WdfObjAttrs;
-    use crate::context::WdfCtxNoneDesc;
-    use crate::handle::{Handle, HandleMut, HandleRef};
-    use crate::operators::_concepts::NtResult;
+    use crate::bd::WdfObjAttrs;
+    use crate::ctx::WdfCtxNoneDesc;
+    use crate::{Handle, HandleMut, HandleRef};
+    use crate::op::_concepts::NtResult;
     use alloc::vec::Vec;
     use core::borrow::Borrow;
     use core::ops::Deref;

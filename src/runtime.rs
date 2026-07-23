@@ -1,4 +1,3 @@
-#[cfg(not(feature = "wdk-runtime"))]
 mod __runtime {
     #[cfg(feature = "test-runtime")]
     #[allow(
@@ -7,10 +6,15 @@ mod __runtime {
         non_upper_case_globals,
         reason = "This crate emulates Windows kernel runtime"
     )]
-    pub mod test_runtime {
+    pub mod test {
         pub mod wdk_sys {
             use core::ffi::c_void;
 
+            #[macro_export]
+            macro_rules! call_unsafe_wdf_function_binding {
+                ($func:ident $(, $args:expr)* $(,)?) => {{}};
+            }
+            pub(crate) use call_unsafe_wdf_function_binding;
             //
             // Base types
             //
@@ -118,7 +122,8 @@ mod __runtime {
             pub type WDFCOLLECTION = *mut _WDFCOLLECTION;
             pub type WDFSTRING = *mut _WDFSTRING;
 
-            pub const WDF_NO_HANDLE: HANDLE = core::ptr::null_mut();
+            pub const WDF_NO_HANDLE: HANDLE =
+                core::ptr::null_mut();
 
             //
             // Unicode string
@@ -132,7 +137,8 @@ mod __runtime {
                 pub Buffer: *mut u16,
             }
 
-            pub type PCUNICODE_STRING = *const UNICODE_STRING;
+            pub type PCUNICODE_STRING =
+                *const UNICODE_STRING;
 
             //
             // Context descriptors
@@ -154,10 +160,10 @@ mod __runtime {
             }
 
             pub type PWDF_OBJECT_CONTEXT_TYPE_INFO =
-            *mut WDF_OBJECT_CONTEXT_TYPE_INFO;
+                *mut WDF_OBJECT_CONTEXT_TYPE_INFO;
 
             pub type PCWDF_OBJECT_CONTEXT_TYPE_INFO =
-            *const WDF_OBJECT_CONTEXT_TYPE_INFO;
+                *const WDF_OBJECT_CONTEXT_TYPE_INFO;
 
             //
             // Execution/synchronization enums
@@ -171,25 +177,25 @@ mod __runtime {
             //
 
             pub type PFN_WDF_OBJECT_CONTEXT_CLEANUP =
-            Option<unsafe extern "C" fn(WDFOBJECT)>;
+                Option<unsafe extern "C" fn(WDFOBJECT)>;
 
             pub type PFN_WDF_OBJECT_CONTEXT_DESTROY =
-            Option<unsafe extern "C" fn(WDFOBJECT)>;
+                Option<unsafe extern "C" fn(WDFOBJECT)>;
 
             //
             // Driver callbacks
             //
 
-            pub type PFN_WDF_DRIVER_DEVICE_ADD =
-            Option<
+            pub type PFN_WDF_DRIVER_DEVICE_ADD = Option<
                 unsafe extern "C" fn(
                     WDFDRIVER,
                     PWDFDEVICE_INIT,
-                ) -> NTSTATUS,
+                )
+                    -> NTSTATUS,
             >;
 
             pub type PFN_WDF_DRIVER_UNLOAD =
-            Option<unsafe extern "C" fn(WDFDRIVER)>;
+                Option<unsafe extern "C" fn(WDFDRIVER)>;
 
             //
             // Object attributes
@@ -206,14 +212,12 @@ mod __runtime {
                 pub EvtDestroyCallback:
                     PFN_WDF_OBJECT_CONTEXT_DESTROY,
 
-                pub ExecutionLevel:
-                    WDF_EXECUTION_LEVEL,
+                pub ExecutionLevel: WDF_EXECUTION_LEVEL,
 
                 pub SynchronizationScope:
                     WDF_SYNCHRONIZATION_SCOPE,
 
-                pub ParentObject:
-                    WDFOBJECT,
+                pub ParentObject: WDFOBJECT,
 
                 pub ContextTypeInfo:
                     PCWDF_OBJECT_CONTEXT_TYPE_INFO,
@@ -231,14 +235,11 @@ mod __runtime {
                 pub EvtDriverDeviceAdd:
                     PFN_WDF_DRIVER_DEVICE_ADD,
 
-                pub EvtDriverUnload:
-                    PFN_WDF_DRIVER_UNLOAD,
+                pub EvtDriverUnload: PFN_WDF_DRIVER_UNLOAD,
 
-                pub DriverInitFlags:
-                    ULONG,
+                pub DriverInitFlags: ULONG,
 
-                pub DriverPoolTag:
-                    ULONG,
+                pub DriverPoolTag: ULONG,
             }
 
             //
@@ -266,7 +267,8 @@ mod __runtime {
 
             #[repr(C)]
             #[derive(Copy, Clone)]
-            pub struct _WDF_MEMORY_DESCRIPTOR__bindgen_ty_1__bindgen_ty_1 {
+            pub struct _WDF_MEMORY_DESCRIPTOR__bindgen_ty_1__bindgen_ty_1
+            {
                 pub Buffer: *mut c_void,
                 pub Length: ULONG,
             }
@@ -318,23 +320,143 @@ mod __runtime {
             pub mod _WDF_IO_TARGET_STATE {
                 use super::WDF_IO_TARGET_STATE;
 
-                pub const WdfIoTargetStateUndefined: WDF_IO_TARGET_STATE = 0;
-                pub const WdfIoTargetStarted: WDF_IO_TARGET_STATE = 1;
-                pub const WdfIoTargetStopped: WDF_IO_TARGET_STATE = 2;
+                pub const WdfIoTargetStateUndefined:
+                    WDF_IO_TARGET_STATE = 0;
+                pub const WdfIoTargetStarted:
+                    WDF_IO_TARGET_STATE = 1;
+                pub const WdfIoTargetStopped:
+                    WDF_IO_TARGET_STATE = 2;
                 pub const WdfIoTargetClosedForQueryRemove: WDF_IO_TARGET_STATE = 3;
-                pub const WdfIoTargetClosed: WDF_IO_TARGET_STATE = 4;
-                pub const WdfIoTargetDeleted: WDF_IO_TARGET_STATE = 5;
-                pub const WdfIoTargetPurged: WDF_IO_TARGET_STATE = 6;
+                pub const WdfIoTargetClosed:
+                    WDF_IO_TARGET_STATE = 4;
+                pub const WdfIoTargetDeleted:
+                    WDF_IO_TARGET_STATE = 5;
+                pub const WdfIoTargetPurged:
+                    WDF_IO_TARGET_STATE = 6;
             }
         }
+    }
+    #[cfg(feature = "kmdf-runtime")]
+    #[expect(
+        clippy::missing_safety_doc,
+        reason = "This is a binding to the Windows Driver Framework (WDF).\
+                  It is only for internal crate use."
+    )]
+    pub mod kmdf {
+        use core::ffi::c_void;
 
+        use wdk_sys::{PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PUNICODE_STRING, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_REQUEST_SEND_OPTIONS, PWDFDEVICE_INIT, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, WDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, call_unsafe_wdf_function_binding, PCUNICODE_STRING};
+
+        use crate::gens::call_ntstatus_wdf_unsafe_binding;
+        use crate::ioctl::commands::IoCtlCommand;
+        use crate::op::NtResult;
+
+        #[inline]
+        pub unsafe fn wdf_driver_create(
+            p_dr_obj: PDRIVER_OBJECT,
+            registry_path: PCUNICODE_STRING,
+            p_attrs: *mut WDF_OBJECT_ATTRIBUTES,
+            p_config: *mut WDF_DRIVER_CONFIG,
+            p_driver: *mut WDFDRIVER,
+        ) -> NtResult {
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfDriverCreate,
+                p_dr_obj,
+                registry_path,
+                p_attrs,
+                p_config,
+                p_driver
+            )
+        }
+        #[inline]
+        pub unsafe fn wdf_device_create(
+            p_dev_init: *mut PWDFDEVICE_INIT,
+            p_attrs: *mut WDF_OBJECT_ATTRIBUTES,
+            p_device: *mut WDFDEVICE,
+        ) -> NtResult {
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfDeviceCreate,
+                p_dev_init,
+                p_attrs,
+                p_device
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_get_target_io(
+            p_device: WDFDEVICE,
+        ) -> WDFIOTARGET {
+            call_unsafe_wdf_function_binding!(
+                WdfDeviceGetIoTarget,
+                p_device,
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_get_targetio_state(
+            p_device: WDFIOTARGET,
+        ) -> WDF_IO_TARGET_STATE {
+            call_unsafe_wdf_function_binding!(
+                WdfIoTargetGetState,
+                p_device,
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_request_send_async(
+            io_target: WDFIOTARGET,
+            io_ctl_command: IoCtlCommand,
+            wdf_request: WDFREQUEST,
+            p_request_desc: PWDF_MEMORY_DESCRIPTOR,
+            p_response_desc: PWDF_MEMORY_DESCRIPTOR,
+            send_options: PWDF_REQUEST_SEND_OPTIONS,
+            p_bytes_returned: PULONG_PTR,
+        ) -> NtResult {
+            // Retrieve the general collection info (including the required preparsed descriptor size)
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfIoTargetSendIoctlSynchronously,
+                io_target,
+                wdf_request,
+                io_ctl_command,
+                p_request_desc,
+                p_response_desc,
+                send_options,
+                p_bytes_returned
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_object_create(
+            p_attrs: PWDF_OBJECT_ATTRIBUTES,
+            p_obj: *mut WDFOBJECT,
+        ) -> NtResult {
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfObjectCreate,
+                p_attrs,
+                p_obj,
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_object_typed_ctx_worker(
+            wdf_obj: WDFOBJECT,
+            p_type_info: PCWDF_OBJECT_CONTEXT_TYPE_INFO,
+        ) -> *mut c_void {
+            call_unsafe_wdf_function_binding!(
+                WdfObjectGetTypedContextWorker,
+                wdf_obj,
+                p_type_info,
+            )
+        }
     }
 }
 
-pub mod generators;
-#[cfg(not(feature = "test-runtime"))]
-pub mod logging;
 pub mod utils;
 
+#[cfg(feature = "wdk-default")]
+pub mod logging;
+
+#[cfg(feature = "kmdf-runtime")]
+pub(crate) use __runtime::kmdf;
 #[cfg(feature = "test-runtime")]
-pub use __rt::test_runtime;
+pub(crate) use __runtime::test;

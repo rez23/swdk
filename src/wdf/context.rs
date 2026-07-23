@@ -1,7 +1,7 @@
 #[cfg(feature = "test-runtime")]
 use crate::rt::test_rt::*;
 
-use crate::operators::{AsCtxDesc, AsNoneCtxDesc, AsNoneCtxUnique, AsUnique};
+use crate::op::{AsCtxDesc, AsNoneCtxDesc, AsNoneCtxUnique, AsUnique};
 use core::ptr;
 use wdk_sys::{PCWDF_OBJECT_CONTEXT_TYPE_INFO, WDF_OBJECT_CONTEXT_TYPE_INFO};
 
@@ -40,7 +40,7 @@ pub mod operations {
         }
     }
 
-    #[cfg(feature = "wdk-runtime")]
+    #[cfg(feature = "kmdf-runtime")]
     #[inline]
     pub unsafe fn get_context_device_ptr<T: 'static>(
         data: PWDF_OBJECT_CONTEXT_TYPE_INFO,
@@ -50,7 +50,7 @@ pub mod operations {
             .cast::<T>()
     }
 
-    #[cfg(feature = "wdk-runtime")]
+    #[cfg(feature = "kmdf-runtime")]
     #[inline]
     pub unsafe fn get_context_device_ptr_mut<T: 'static>(
         data: PWDF_OBJECT_CONTEXT_TYPE_INFO,

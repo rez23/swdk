@@ -30,8 +30,13 @@ wdk-deps = [
     "dep:wdk-alloc",
     "dep:wdk-sys",
 ]
-wdk-runtime = ["wdk-deps", "wdk-nightly"]
-test-runtime = []
+#default = ["kmdf-runtime"]
+wdk-default = ["wdk-deps", "wdk-nightly"]
+kmdf-runtime = ["minimal-runtime", "wdk-default"]
+test-runtime = ["minimal-runtime"]
+minimal-runtime = []
+wdk-examples = []
+
 nightly = ["wdk-nightly"]
 hid = ["wdk-sys/hid"]
 gpio = ["wdk-sys/gpio"]

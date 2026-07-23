@@ -11,47 +11,31 @@
 )]
 extern crate alloc;
 
-mod device;
-
-use swdk::builders::{
-    WdfDriverConf, WdfDriverSetup, WdfObjAttrs,
-};
-use swdk::context::WdfCtxNoneDesc;
-use swdk::handle::Handle;
-use swdk::ioctl::{IoCtlRequest, IoCtlResponse};
-use swdk::operators::{AsWdfOwned, AsWdfOwner};
+use alloc::string::String;
+use wdk_alloc::WdkAllocator;
+use wdk_sys::HID_COLLECTION_INFORMATION;
 use swdk::rt::wdk_sys::{
-    HID_COLLECTION_INFORMATION, NTSTATUS, PCUNICODE_STRING,
+    NTSTATUS, PCUNICODE_STRING,
     PDRIVER_OBJECT, PWDFDEVICE_INIT, STATUS_SUCCESS,
     STATUS_UNSUCCESSFUL, WDFDEVICE, WDFDRIVER, WDFIOTARGET,
 };
-use swdk::values::WdfIoTargetError::IoCtlTargetSendError;
-use swdk::{
-    debug, error, if_nterror_return_ntstatus, info, ioctl,
-};
-
-#[cfg(not(test))]
-use swdk::rt::WdkAllocator;
-
-use crate::device::DeviceData;
-use crate::device::models::GamepadModels;
+use swdk::val::WdfIoTargetError::IoCtlTargetSendError;
+use swdk::{debug, declare_ctx_descriptor, error, if_nterror_return_ntstatus, info, ioctl, Handle};
+use swdk::bd::{WdfDriverConf, WdfDriverSetup, WdfObjAttrs};
+use swdk::ctx::WdfCtxNoneDesc;
+use swdk::ioctl::{IoCtlRequest, IoCtlResponse};
+use swdk::op::{AsWdfOwned, AsWdfOwner};
 
 #[cfg(not(test))]
 #[global_allocator]
 static GLOBAL_ALLOCATOR: WdkAllocator = WdkAllocator;
 
-/// Main entry point for the KMDF driver.
-///
-/// # Panics
-/// This function may panic if internal string conversions (e.g. `CString::new`)
-/// fail due to invalid UTF-8 input. Such panics will trigger the kernel panic
-/// handler provided by `wdk_panic`.
-///
-/// # Safety
-/// This function is called directly by the Windows kernel. The pointers
-/// `driver` and `registry_path` must be valid for the duration of the call.
-/// The caller (the OS) guarantees these invariants. The function must not
-/// assume any additional safety beyond what KMDF provides.
+#[derive(Default)]
+struct DeviceData {
+    pub model: String
+}
+declare_ctx_descriptor!(DeviceData);
+
 #[unsafe(export_name = "DriverEntry")]
 pub unsafe extern "system" fn driver_entry(
     driver_obj: PDRIVER_OBJECT,
@@ -126,12 +110,12 @@ unsafe extern "C" fn on_driver_device_add(
         }
     ));
 
-    let gamepad_model = GamepadModels::from_vid_and_pid(
-        device_info.ProductID,
-        device_info.VendorID,
-    );
-
+    // add name to ctx
     info!("Device capabilities: {}", gamepad_model);
 
     STATUS_SUCCESS
+}
+
+fn main() {
+    // placeholder for test
 }

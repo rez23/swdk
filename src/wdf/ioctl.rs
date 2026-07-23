@@ -69,7 +69,7 @@ mod private {
         use crate::rt::test_rt::*;
 
         use crate::ioctl::private::{operations, IoCtlResponse};
-        use crate::operators::{AsBuff, AsBuilder, AsBuilderMut};
+        use crate::op::{AsBuff, AsBuilder, AsBuilderMut};
         use core::ops::Deref;
         use wdk_sys::WDF_MEMORY_DESCRIPTOR;
 
@@ -131,7 +131,7 @@ mod private {
 
         use crate::ioctl::private::commands::IoCtlCommand;
         use crate::ioctl::private::{operations, IoCtlRequest};
-        use crate::operators::{AsBuilder, AsOptionalBuff};
+        use crate::op::{AsBuilder, AsOptionalBuff};
         use wdk_sys::WDF_MEMORY_DESCRIPTOR;
 
         #[allow(dead_code)]
