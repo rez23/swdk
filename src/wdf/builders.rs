@@ -5,7 +5,7 @@ use crate::const_size_to_ulong;
 use crate::ctx::WdfCtxNoneDesc;
 use crate::Handle;
 use crate::op::{
-    AsBuilder, AsCtxDesc, AsRaw,
+    AsBuilder, AsCtxDescriptor, AsRaw,
 };
 use crate::val::{WdfExecutionLevel, WdfSyncScope};
 use core::ptr;
