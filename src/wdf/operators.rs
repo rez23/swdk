@@ -253,8 +253,9 @@ mod _operators {
             owned: Self::Owned,
             conf: Self::Conf,
             attrs: Option<WdfObjAttrs<D>>,
-        ) -> NtResult<Self> where
-                D: AsCtxDesc;
+        ) -> NtResult<Self>
+        where
+            D: AsCtxDescriptor;
 
         /// Create a WDF object of type [`O`] and materialize it as `Self`.
         ///
@@ -304,7 +305,7 @@ mod _operators {
     /// objects with no associated context.
     pub trait AsNoneCtxUnique: AsUnique {}
 
-    pub trait AsNoneCtxDesc<O = ()>: AsCtxDesc {}
+    pub trait AsNoneCtxDesc<O = ()>: AsCtxDescriptor {}
 
     /// Describe a generic data type that is able to expose an handle
     /// to a static instance of `WDF_OBJECT_CONTEXT_TYPE_INFO`

@@ -12,7 +12,7 @@ use core::ptr;
 use wdk_sys::{PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PFN_WDF_DRIVER_DEVICE_ADD, PFN_WDF_DRIVER_UNLOAD, PFN_WDF_OBJECT_CONTEXT_CLEANUP, PFN_WDF_OBJECT_CONTEXT_DESTROY, PUNICODE_STRING, ULONG, WDFOBJECT, WDF_DRIVER_CONFIG, WDF_EXECUTION_LEVEL, WDF_OBJECT_ATTRIBUTES, WDF_SYNCHRONIZATION_SCOPE};
 
 pub struct WdfObjAttrs<
-    D: AsCtxDesc = WdfCtxNoneDesc,
+    D: AsCtxDescriptor = WdfCtxNoneDesc,
 > {
     pub on_cleanup: PFN_WDF_OBJECT_CONTEXT_CLEANUP,
     pub on_destroy: PFN_WDF_OBJECT_CONTEXT_DESTROY,
@@ -22,7 +22,7 @@ pub struct WdfObjAttrs<
     _descriptor: D,
 }
 
-impl<D: AsCtxDesc> AsBuilder
+impl<D: AsCtxDescriptor> AsBuilder
     for WdfObjAttrs<D>
 {
     type Descriptor<'b>
@@ -56,7 +56,7 @@ impl<D: AsCtxDesc> AsBuilder
     }
 }
 
-impl<D: AsCtxDesc> Default
+impl<D: AsCtxDescriptor> Default
     for WdfObjAttrs<D>
 {
     fn default() -> Self {
@@ -71,7 +71,7 @@ impl<D: AsCtxDesc> Default
     }
 }
 
-impl<D: AsCtxDesc> WdfObjAttrs<D> {
+impl<D: AsCtxDescriptor> WdfObjAttrs<D> {
     #[must_use]
     pub fn with_sync_scope(
         mut self,

@@ -1,7 +1,7 @@
 #[cfg(feature = "test-runtime")]
 use crate::rt::test_rt::*;
 
-use crate::op::{AsCtxDesc, AsNoneCtxDesc, AsNoneCtxUnique, AsUnique};
+use crate::op::{AsCtxDescriptor, AsNoneCtxDesc, AsNoneCtxUnique, AsUnique};
 use core::ptr;
 use wdk_sys::{PCWDF_OBJECT_CONTEXT_TYPE_INFO, WDF_OBJECT_CONTEXT_TYPE_INFO};
 
@@ -96,5 +96,5 @@ impl AsNoneCtxUnique for WdfCtxNull {}
 /// Represents the absence of the context descriptor for a [`IsWdfHandle`] type
 #[derive(Default)]
 pub struct WdfCtxNoneDesc;
-impl AsCtxDesc for WdfCtxNoneDesc {}
+impl AsCtxDescriptor for WdfCtxNoneDesc {}
 impl AsNoneCtxDesc for WdfCtxNoneDesc {}

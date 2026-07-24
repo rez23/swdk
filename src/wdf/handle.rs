@@ -55,7 +55,7 @@ mod private {
                 use crate::bd::WdfObjAttrs;
                 use crate::Handle;
                 use crate::op::{
-                    AsBuilder, AsCtxDesc, AsWdfOwner, NtResult,
+                    AsBuilder, AsCtxDescriptor, AsWdfOwner, NtResult,
                 };
                 use core::ptr;
                 use wdk_sys::{WDFOBJECT, WDF_NO_HANDLE};
@@ -70,7 +70,7 @@ mod private {
                         _: Self::Owned,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self> where
-                            D: AsCtxDesc,
+                            D: AsCtxDescriptor,
                     {
                         let mut obj = WDF_NO_HANDLE.cast();
                         let mut attrs = attrs.map(|a| a.build());
@@ -94,7 +94,7 @@ mod private {
                 
                 use crate::bd::WdfObjAttrs;
                 use crate::op::{
-                    AsBuilder, AsCtxDesc, AsWdfOwner, NtResult,
+                    AsBuilder, AsCtxDescriptor, AsWdfOwner, NtResult,
                 };
                 use core::ptr;
 
@@ -111,7 +111,7 @@ mod private {
                         _: Self::Conf,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self> where
-                            D: AsCtxDesc,
+                            D: AsCtxDescriptor,
                     {
                         let mut device: WDFDEVICE = WDF_NO_HANDLE.cast();
                         let mut attrs = attrs.map(|a| a.build());
@@ -141,7 +141,7 @@ mod private {
                         owner: PWDFDEVICE_INIT,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self> where
-                            D: AsCtxDesc,
+                            D: AsCtxDescriptor,
                     {
                         Self::from_owned_with_attrs::<D>(owner, (), attrs)
                     }
@@ -153,7 +153,7 @@ mod private {
                 
                 use crate::bd::{WdfDriverConf, WdfObjAttrs};
                 use crate::op::{
-                    AsBuilder, AsCtxDesc, AsWdfOwner, NtResult,
+                    AsBuilder, AsCtxDescriptor, AsWdfOwner, NtResult,
                 };
                 use core::ptr;
 
@@ -170,7 +170,7 @@ mod private {
                         conf: Self::Conf,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self> where
-                            D: AsCtxDesc,
+                            D: AsCtxDescriptor,
                     {
                         let mut driver: WDFDRIVER = WDF_NO_HANDLE.cast();
                         let mut attrs = attrs.map(|a| a.build());
