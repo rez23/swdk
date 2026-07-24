@@ -1,2 +1,6 @@
-/target
-/external
+external
+target
+*.cer*
+*.wew
+windbg*
+*.zip
