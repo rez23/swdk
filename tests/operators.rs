@@ -1,4 +1,4 @@
-use swdk::operators::AsBuff;
+use swdk::op::AsBuff;
 
 struct Test(u32);
 

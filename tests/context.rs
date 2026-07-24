@@ -1,4 +1,4 @@
-use swdk::context::operations;
+use swdk::ctx::operations;
 
 #[test]
 fn context_descriptor_has_valid_size() {

@@ -2,7 +2,7 @@ use swdk::ioctl::{
     IoCtlRequest,
     IoCtlResponse,
 };
-use swdk::operators::AsBuilder;
+use swdk::op::AsBuilder;
 
 #[test]
 fn request_keeps_command() {

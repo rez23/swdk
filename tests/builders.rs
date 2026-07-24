@@ -1,10 +1,10 @@
-use swdk::builders::{
+use swdk::bd::{
     WdfDriverConf,
     WdfDriverSetup,
     WdfObjAttrs
 };
-use swdk::context::WdfCtxNoneDesc;
-use swdk::operators::AsBuilder;
+use swdk::ctx::WdfCtxNoneDesc;
+use swdk::op::AsBuilder;
 
 #[test]
 fn obj_attrs_default_is_valid() {

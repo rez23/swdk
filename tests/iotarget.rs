@@ -1,7 +1,7 @@
-use swdk::handle::Handle;
+use swdk::Handle;
 use swdk::ioctl::IoCtlRequest;
-use swdk::operators::AsWdfOwned;
-use swdk::values::WdfIoTargetState;
+use swdk::op::AsWdfOwned;
+use swdk::val::WdfIoTargetState;
 
 use swdk::rt::wdk_sys::{
     WDFDEVICE,

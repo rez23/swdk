@@ -1,5 +1,5 @@
-use swdk::handle::Handle;
-use swdk::operators::{AsRaw, AsRawWithBorrow};
+use swdk::Handle;
+use swdk::op::{AsRaw, AsRawWithBorrow};
 
 #[test]
 fn can_create_handle() {
