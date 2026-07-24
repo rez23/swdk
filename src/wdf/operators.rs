@@ -1,24 +1,24 @@
 mod _concepts {
+    use wdk_sys::NTSTATUS;
+
     #[cfg(feature = "test-runtime")]
     use crate::rt::test_rt::*;
-
-    use wdk_sys::NTSTATUS;
 
     pub type NtResult<T = ()> = Result<T, NTSTATUS>;
 }
 mod _operators {
-    #[cfg(feature = "test-runtime")]
-    use crate::rt::test_rt::*;
+    use alloc::vec::Vec;
+    use core::borrow::Borrow;
+    use core::ptr;
+
+    use wdk_sys::PCWDF_OBJECT_CONTEXT_TYPE_INFO;
 
     use crate::bd::WdfObjAttrs;
     use crate::ctx::WdfCtxNoneDesc;
-    use crate::{Handle, HandleMut, HandleRef};
     use crate::op::_concepts::NtResult;
-    use alloc::vec::Vec;
-    use core::borrow::Borrow;
-    use core::ops::Deref;
-    use core::ptr;
-    use wdk_sys::PCWDF_OBJECT_CONTEXT_TYPE_INFO;
+    #[cfg(feature = "test-runtime")]
+    use crate::rt::test_rt::*;
+    use crate::HandleRef;
 
     pub trait AsPtr<T>: AsRef<T> {
         #[inline]
@@ -28,8 +28,8 @@ mod _operators {
 
         #[inline]
         fn with_ptr<F>(&self, f: F)
-                       where
-                           F: FnOnce(*const T),
+        where
+            F: FnOnce(*const T),
         {
             f(unsafe { self.as_ptr() })
         }
@@ -58,8 +58,8 @@ mod _operators {
 
         #[inline]
         fn with_ptr_mut<F>(&mut self, f: F)
-                           where
-                               F: FnOnce(*mut T),
+        where
+            F: FnOnce(*mut T),
         {
             f(unsafe { self.as_ptr_mut() })
         }
@@ -79,8 +79,8 @@ mod _operators {
         /// ```
         #[inline]
         fn with_buff<F>(&self, f: F)
-                        where
-                            F: FnOnce(&[u8]),
+        where
+            F: FnOnce(&[u8]),
         {
             f(self.as_buff())
         }
@@ -90,7 +90,8 @@ mod _operators {
         fn as_buff(&self) -> &[u8] {
             unsafe {
                 core::slice::from_raw_parts(
-                    ptr::from_ref(self.as_ref()).cast::<u8>(),
+                    ptr::from_ref(self.as_ref())
+                        .cast::<u8>(),
                     size_of::<T>(),
                 )
             }
@@ -99,8 +100,8 @@ mod _operators {
 
     pub trait AsBuffMut<T>: Default + AsMut<T> {
         fn with_buff_mut<F>(&mut self, f: F)
-                            where
-                                F: FnOnce(&mut [u8]),
+        where
+            F: FnOnce(&mut [u8]),
         {
             f(self.as_buff_mut())
         }
@@ -109,7 +110,8 @@ mod _operators {
             unsafe {
                 // SAFETY: buff cannot be null in this trait
                 core::slice::from_raw_parts_mut(
-                    ptr::from_mut(self.as_mut()).cast::<u8>(),
+                    ptr::from_mut(self.as_mut())
+                        .cast::<u8>(),
                     size_of::<T>(),
                 )
             }
@@ -118,8 +120,8 @@ mod _operators {
 
     pub trait AsBuilder {
         type Descriptor<'a>
-            where
-                Self: 'a;
+        where
+            Self: 'a;
 
         #[must_use]
         fn build(&self) -> Self::Descriptor<'_>;
@@ -131,10 +133,13 @@ mod _operators {
 
     pub trait AsMappableBuff<T>: AsBuff<T> {
         type Descriptor<'a>
-            where
-                Self: 'a;
+        where
+            Self: 'a;
 
-        fn map<U>(&self, f: impl FnMut(&u8) -> U) -> Vec<U> {
+        fn map<U>(
+            &self,
+            f: impl FnMut(&u8) -> U,
+        ) -> Vec<U> {
             self.as_buff().iter().map(f).collect()
         }
     }
@@ -143,8 +148,8 @@ mod _operators {
         /// Permit doing something with the optional buffer
         #[inline]
         fn with_buff<F>(&self, f: F)
-                        where
-                            F: FnOnce(Option<&[u8]>),
+        where
+            F: FnOnce(Option<&[u8]>),
         {
             f(self.as_buff())
         }
@@ -159,12 +164,14 @@ mod _operators {
         }
     }
 
-    pub trait AsOptionalBuffMut<T>: AsOptionalBuff<T> + AsMut<Option<T>> {
+    pub trait AsOptionalBuffMut<T>:
+        AsOptionalBuff<T> + AsMut<Option<T>>
+    {
         /// Permit doing something with the optional buffer
         #[inline]
         fn with_buff_mut<F>(&mut self, f: F)
-                            where
-                                F: FnOnce(Option<&mut [u8]>),
+        where
+            F: FnOnce(Option<&mut [u8]>),
         {
             f(self.as_buff_mut())
         }
@@ -187,7 +194,9 @@ mod _operators {
         }
     }
 
-    pub trait AsBuffPtrMut<T>: AsBuffPtr<T> + AsBuffMut<T> + AsPtrMut<T> {
+    pub trait AsBuffPtrMut<T>:
+        AsBuffPtr<T> + AsBuffMut<T> + AsPtrMut<T>
+    {
         /// Get a mutable ptr to the buffer
         #[inline]
         fn as_buff_mut(&mut self) -> &mut T {
@@ -195,51 +204,27 @@ mod _operators {
         }
     }
 
-    pub trait AsCtxDesc: Sized + Default {
-        #[allow(unused_variables)]
-        fn wdf_get<O>(
-            obj: HandleRef<'_, O>,
-        ) -> Option<HandleRef<'_, Self>> {
+    pub trait AsCtxDescriptor: Sized + Default {
+        fn unique() -> Option<PCWDF_OBJECT_CONTEXT_TYPE_INFO>
+        {
             None
         }
-        fn unique() -> Option<PCWDF_OBJECT_CONTEXT_TYPE_INFO> {
-            None
-        }
-        #[allow(unused_variables)]
-        fn wdf_get_mut<O>(
-            obj: HandleRef<'_, O>,
-        ) -> Option<HandleMut<'_, Self>> {
-            None
-        }
+
         fn wdf_type_name() -> Option<&'static str> {
             None
         }
-    }
 
-    pub trait AsCtx<O, C: AsCtxDesc>: Sized + Deref {
-        /// Get a pointer to the allocated kernel context object
-        fn ctx(&self) -> Option<Handle<*const C>>;
-
-        /// Get a mutable pointer to the allocated kernel context object
-        fn ctx_mut(&mut self) -> Option<*mut C> {
-            let ctx = self.ctx()?;
-            Some(ctx.deref().cast_mut())
-        }
-
-        /// Get the WDF object type name
-        fn wdf_type_name(&self) -> Option<&'static str> {
-            C::wdf_type_name()
-        }
-
-        /// Get the unique WDF object context type info
-        unsafe fn unique(
-            &self,
-        ) -> Option<PCWDF_OBJECT_CONTEXT_TYPE_INFO> {
-            C::unique()
+        #[allow(unused_variables)]
+        fn from_kernel<O>(
+            obj: &O,
+        ) -> Option<HandleRef<'_, Self>> {
+            None
         }
     }
 
-    pub trait AsWdfOwner<O>: Sized + AsPtr<O> + AsRef<O> {
+    pub trait AsWdfOwner<O>:
+        Sized + AsPtr<O> + AsRef<O>
+    {
         type Conf;
         type Owned;
 
@@ -272,7 +257,9 @@ mod _operators {
         }
     }
 
-    pub trait AsWdfOwned<O>: Sized + AsPtr<O> + AsRef<O> {
+    pub trait AsWdfOwned<O>:
+        Sized + AsPtr<O> + AsRef<O>
+    {
         type Owner;
         fn from_owner(
             owner: &Self::Owner,
@@ -326,6 +313,11 @@ mod _operators {
     /// See [`swdf_declare_context_handle!`] examples for more information
     pub unsafe trait AsUnique {
         /// Get the unique type ptr used to describe the context type in `WDF`
+        /// # Safety
+        /// This function is unsafe because it returns a pointer
+        /// to a static extern instance of [`PCWDF_OBJECT_CONTEXT_TYPE_INFO`].
+        /// This symbol is allocated in the kernel by WDF, so the caller
+        /// must be sure that WDF is functional and working before making that call
         unsafe fn unique(
             &self,
         ) -> PCWDF_OBJECT_CONTEXT_TYPE_INFO;

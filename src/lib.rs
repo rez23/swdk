@@ -36,7 +36,6 @@ pub mod rt {
 
         #[cfg(feature = "kmdf-runtime")]
         pub use crate::runtime::logging;
-
         pub use crate::runtime::utils;
 
         pub(crate) use crate::runtime::kmdf;

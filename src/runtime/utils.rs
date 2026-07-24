@@ -51,11 +51,11 @@ macro_rules! const_size_to_ulong {
         const SIZE: usize = core::mem::size_of::<$t>();
 
         // Compile-time check: if KMDF ever breaks ABI, the driver won't compile.
-        const _: () = assert!(SIZE <= wdk_sys::ULONG::MAX as usize);
+        const _: () = assert!(SIZE <= $crate::rt::wdk_sys::ULONG::MAX as usize);
 
         #[allow(clippy::cast_possible_truncation)]
         {
-            SIZE as wdk_sys::ULONG
+            SIZE as $crate::rt::wdk_sys::ULONG
         }
     }};
 }
@@ -69,17 +69,17 @@ macro_rules! size_to_ulong {
         // This assertion is evaluated in debug builds.
         // In release builds, LLVM is extremely smart and will completely optimize
         // this assertion away into zero CPU instructions if the value is known to be safe.
-        debug_assert!(value <= wdk_sys::ULONG::MAX as usize);
+        debug_assert!(value <= $crate::rt::wdk_sys::ULONG::MAX as usize);
 
         #[allow(clippy::cast_possible_truncation)]
         {
-            value as wdk_sys::ULONG
+            value as $crate::rt::wdk_sys::ULONG
         }
     }};
 }
 
 #[macro_export]
-macro_rules! if_ntstatus_error_return {
+macro_rules! if_nterror_return {
     ($status:expr) => {{
         let status = $status;
 
@@ -108,7 +108,7 @@ macro_rules! if_ntstatus_error_return {
 }
 
 #[macro_export]
-macro_rules! if_nterror_return_result {
+macro_rules! from_ntstatus_to_ntresult {
     ($status:expr) => {{
         let status = $status;
 
@@ -133,6 +133,70 @@ macro_rules! if_nterror_return_result {
         }
 
         Ok(status)
+    }};
+}
+
+#[macro_export]
+macro_rules! if_nterror_return_ntstatus {
+    ($expr:expr) => {{
+        match $expr {
+            Ok(value) => value,
+            Err(ntstatus) => {
+                return ntstatus
+            }
+        }
+    }};
+    (log_err, $expr:expr, $message:literal) => {{
+        match $expr {
+            Ok(value) => value,
+            Err(status_err) => {
+                $crate:error!(
+                    "{} with STATUS: {:?}",
+                    $message,
+                    status_err,
+                );
+                return STATUS_UNSUCCESSFUL
+            }
+        }
+    }};
+
+    ($result:expr, $message:literal) => {{
+        match $result {
+            Ok(value) => value,
+            Err(ntstatus) => {
+                $crate:error!(
+                    "{} with STATUS: {:?}",
+                    $message,
+                    ntstatus,
+                );
+
+                return ntstatus;
+            }
+        }
+    }};
+
+    ($result:expr, $ntstatus:expr) => {{
+        match $result {
+            Ok(value) => value,
+            Err(_) => {
+                return $ntstatus;
+            }
+        }
+    }};
+
+    ($result:expr, $ntstatus:expr, $message:literal) => {{
+        match $result {
+            Ok(value) => value,
+            Err(_) => {
+                $crate:error!(
+                    "{} with status {}",
+                    $message,
+                    $ntstatus,
+                );
+
+                return $ntstatus;
+            }
+        }
     }};
 }
 
