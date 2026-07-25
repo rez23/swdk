@@ -1,16 +1,15 @@
 #![cfg_attr(feature = "kmdf-runtime", no_std)]
-#![cfg_attr(
+/*#![cfg_attr(
     feature = "unstable",
-    const_format_args,
-    //trait_alias,
-    //lazy_type_alias,
-    //associated_type_defaults,
-    //min_specialization,
-    //generic_const_exprs,
-    //type_alias_impl_trait,
-    //negative_impls
-    //impl_trait_in_assoc_type,
-)]
+    feature(
+        trait_alias,
+        associated_type_defaults,
+        min_specialization,
+        type_alias_impl_trait,
+        negative_impls,
+        impl_trait_in_assoc_type,
+    )
+)]*/
 #[cfg(all(not(feature = "test-runtime"), not(feature = "kmdf-runtime")))]
 compile_error!(
     "Multiple runtime behavior selected. Select only one! ('kmdf-runtime', 'test-runtime')"
