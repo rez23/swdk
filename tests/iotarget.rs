@@ -53,7 +53,7 @@ fn send_ioctl_returns_ok() {
         IoCtlRequest::new(0x1234, EchoRequest::default());
 
     let result =
-        target.send_ioctl(request);
+        target.send_ioctl_sync(request);
 
     assert!(result.is_ok());
 }
@@ -68,7 +68,7 @@ fn send_ioctl_returns_default_response() {
 
     let response =
         target
-            .send_ioctl(request)
+            .send_ioctl_sync(request)
             .unwrap();
 
     assert_eq!(response.value, 0);
