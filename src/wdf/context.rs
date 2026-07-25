@@ -5,7 +5,7 @@ use crate::op::{AsCtxDescriptor, AsNoneCtxDesc, AsNoneCtxUnique, AsUnique};
 use core::ptr;
 use wdk_sys::{PCWDF_OBJECT_CONTEXT_TYPE_INFO, WDF_OBJECT_CONTEXT_TYPE_INFO};
 
-#[allow(dead_code)]
+#[expect(clippy::missing_safety_doc, reason="This is an internal API")]
 pub mod operations {
     #[cfg(feature = "test-runtime")]
     use crate::rt::test_rt::*;
