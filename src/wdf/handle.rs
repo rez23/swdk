@@ -4,10 +4,111 @@ mod private {
 
     use wdk_sys::HANDLE;
 
-    /// A simple lifetime-safe handle for WDF kernel objects
+    /// Encapsulates a kernel object or resource [`HANDLE`] of type `H`.
+    ///
+    /// # About [`Handle`]
+    /// [`HANDLE`] is one of the core concepts in the Windows Driver Framework (WDF) and represents
+    /// a handle to a kernel resource or object.
+    /// Handles are used extensively in WDF to manage various system resources,
+    /// such as device objects, file objects, and other kernel objects. This is the Rust version.
+    /// There are 3 common forms of `Handle<T>`, exposed through 3 main aliases of [`Handle`]:
+    /// - [`Handle`]: Simply a `Handle<T>`. Typically a raw pointer to a kernel object.
+    /// - [`HandleRef`]: `Handle<&'a T>`, typically a reference to a raw pointer that points to a kernel object.
+    /// - [`HandleMut`]: `Handle<&'a mut T>`, typically a mutable reference to a raw pointer that points to a kernel object.
+    ///
+    /// # Type Parameters
+    /// - `H`: The handle type being wrapped. Defaults to `HANDLE` if not explicitly specified.
+    ///
+    /// # Traits
+    /// - `Clone`: Allows `Handle` to be cloned, creating a duplicate with the same underlying handle.
+    /// - `Debug`: Enables formatting of `Handle` for debugging purposes.
+    ///
+    /// # Example
+    /// `Handle` is the basic building block of `swdk`.
+    /// You can use it to implement your own functions for raw WDF kernel types.
+    /// For example, the `swdk` library implements [`Handle::read_status()`] for [`WDFIOTARGET`]
+    /// in exactly this way:
+    /// ```rust
+    /// impl swdk::Handle<swdk::rt::wdk_sys::WDFIOTARGET> {
+    ///     pub fn read_status(&self) -> swdk::val::WdfIoTargetState {
+    ///         swdk::val::WdfIoTargetState::from(unsafe {
+    ///             ...
+    /// ```
+    ///
+    /// `swdk` is already quite complete, and you can declare a full Rust driver
+    /// in just a few lines using `Handle`:
+    /// ```rust
+    /// use swdk::rt::wdk_sys::{WDFDEVICE, WDFDRIVER, PWDFDEVICE_INIT, STATUS_SUCCESS};
+    /// use swdk::Handle;
+    /// use swdk::if_nterror_return_ntstatus;
+    /// use swdk::bd::{WdfDriverConf, WdfDriverSetup, WdfObjAttrs};
+    /// use swdk::println;
+    ///
+    /// type HandleDevice = Handle<WDFDEVICE>;
+    ///
+    ///#[unsafe(export_name = "DriverEntry")]
+    /// pub unsafe extern "system" fn driver_entry(
+    ///     driver_obj: PDRIVER_OBJECT,
+    ///     registry_path: PCUNICODE_STRING,
+    /// ) -> NTSTATUS {
+    ///     debug!("DriverEntry launched from WDF");
+    ///     if_nterror_return_ntstatus!(
+    ///         Handle::<WDFDRIVER>::from_owned_with_attrs(
+    ///             driver_obj,
+    ///             WdfDriverConf {
+    ///                 setup: WdfDriverSetup {
+    ///                     on_driver_unload: Some(
+    ///                         on_driver_unload
+    ///                     ),
+    ///                     on_device_add: Some(
+    ///                         on_driver_device_add
+    ///                     ),
+    ///                     ..WdfDriverSetup::default()
+    ///                 },
+    ///                 registry_path,
+    ///             },
+    ///             Some(WdfObjAttrs::<WdfCtxNoneDesc>::default())
+    ///         )
+    ///     );
+    ///     STATUS_SUCCESS
+    /// }
+    ///
+    /// #[unsafe(link_section = "PAGE")]
+    /// unsafe extern "C" fn on_driver_device_add(
+    ///     _driver: WDFDRIVER,
+    ///     device_init: PWDFDEVICE_INIT,
+    /// ) -> NTSTATUS {
+    ///     println!("Hello world")
+    /// }
+    ///
+    /// #[unsafe(link_section = "PAGE")]
+    /// unsafe extern "C" fn on_driver_unload(
+    ///     _driver: WDFDRIVER,
+    ///     device_init: PWDFDEVICE_INIT,
+    /// ) -> NTSTATUS {
+    ///     println!("Goodbye")
+    /// }
+    /// ```
+    /// Above, an example of a potential driver that writes "Hello world" to WinDbg buffer
+    /// when its device is added, and "Goodbye" when it unloads.
+    /// # See Also
+    /// - [swdk official repo](https://github.com/rez23/swdk)
+    /// - [WDF get started](https://learn.microsoft.com/windows-hardware/drivers/wdf/)
+    /// - [API reference documentation for Windows Driver Kit](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/)
     #[derive(Clone, Debug)]
     pub struct Handle<H = HANDLE>(H);
+    
+    
+    /// A reference to a kernel object or resource
+    /// 
+    /// # See Also
+    /// This is just an alias to [`Handle<T>`] where `T` is `&T`
     pub type HandleRef<'a, T = HANDLE> = Handle<&'a T>;
+    
+    /// A mutable reference to a kernel object or resource
+    ///
+    ///# See Also
+    /// This is just an alias to [`Handle<T>`] where `T` is `&mut T`
     pub type HandleMut<'a, T = HANDLE> = Handle<&'a mut T>;
 
     mod _impls {
@@ -136,6 +237,52 @@ mod private {
                     }
                 }
                 impl Handle<WDFDEVICE> {
+                    /// Creates a new instance of the object from an owned `PWDFDEVICE_INIT` with optional attributes.
+                    ///
+                    /// This method initializes the object using a provided `PWDFDEVICE_INIT` that is owned by the caller
+                    /// and applies optional object attributes if specified. It delegates the actual creation to the method
+                    /// `from_owned_with_attrs`.
+                    ///
+                    /// # Type Parameters
+                    ///
+                    /// - [`D`]: A type that implements `AsCtxDescriptor`. This is used to describe the context associated
+                    ///   with the object being created.
+                    ///
+                    /// # Parameters
+                    ///
+                    /// - [`owner`]: A `PWDFDEVICE_INIT` structure that must be owned by the caller. This structure is utilized
+                    ///   for the initialization process of the object.
+                    /// - [`attrs`]: An optional `WdfObjAttrs` descriptor that configures the attributes of the object. Pass
+                    ///   `None` if no additional attributes are required.
+                    ///
+                    /// # Returns
+                    ///
+                    /// Returns an [`NtResult`] containing the newly created object wrapped in `Self` on success. If an
+                    /// error occurs during initialization, the result contains the corresponding [`NTSTATUS`] failure code.
+                    ///
+                    /// # Examples
+                    ///
+                    /// ```rust
+                    /// let device_init: PWDFDEVICE_INIT = ...;
+                    /// let attrs = Some(WdfObjAttrs::new(...));
+                    ///
+                    /// let result = MyObject::from_owned(device_init, attrs);
+                    /// match result {
+                    ///     Ok(obj) => {
+                    ///         // Successfully created the object
+                    ///     }
+                    ///     Err(status) => {
+                    ///         // Handle the error
+                    ///     }
+                    /// }
+                    /// ```
+                    ///
+                    /// # Notes
+                    ///
+                    /// - This method is typically used when the caller explicitly owns the [`PWDFDEVICE_INIT`] handle,
+                    ///   ensuring its proper management during the creation process.
+                    /// - If additional context or attributes need to be applied beyond the basics, use the [`attrs`] parameter
+                    ///   to specify them.
                     pub fn from_owned<D>(
                         owner: PWDFDEVICE_INIT,
                         attrs: Option<WdfObjAttrs<D>>,
@@ -256,6 +403,32 @@ mod private {
                 }
 
                 impl Handle<WDFIOTARGET> {
+                    /// Reads and returns the status of the I/O target.
+                    ///
+                    /// This method determines the current state of the I/O target and returns
+                    /// it as a `WdfIoTargetState` enum. The returned state depends on the
+                    /// active runtime feature.
+                    ///
+                    /// # Runtime Features
+                    /// - **kmdf-runtime**:
+                    ///   - If this feature is enabled, the state is retrieved by calling the
+                    ///     underlying KMDF-specific function `wdf_get_targetio_state` on the
+                    ///     raw handle returned by the `self.raw()` method.
+                    ///   - Note: The call to `wdf_get_targetio_state` is marked `unsafe`
+                    ///     because it interacts directly with a lower-level API.
+                    /// - **test-runtime**:
+                    ///   - If this feature is enabled, the method will always return
+                    ///     `WdfIoTargetState::Started`, simulating a consistent state for
+                    ///     testing purposes.
+                    ///
+                    /// # Returns
+                    /// A `WdfIoTargetState` indicating the current status of the I/O target.
+                    ///
+                    /// # Safety
+                    /// When the `kmdf-runtime` feature is enabled, this method uses an
+                    /// `unsafe` block to call `wdf_get_targetio_state`. Ensure that the
+                    /// environment and underlying abstractions are correctly initialized and
+                    /// managed to avoid undefined behavior.
                     pub fn read_status(&self) -> WdfIoTargetState {
                         #[cfg(feature = "kmdf-runtime")]{
                             WdfIoTargetState::from(unsafe {
@@ -267,6 +440,69 @@ mod private {
                         }
                     }
 
+                    /// Sends an IOCTL (Input/Output Control) request to the device and waits for a response.
+                    ///
+                    /// This function is designed to send IOCTL requests when the device is in a
+                    /// "Started" state. It constructs the input and output buffers for the IOCTL operation
+                    /// and interacts with the underlying KMDF runtime (if enabled) using the appropriate
+                    /// APIs. It returns the response obtained from the device if the operation is successful
+                    /// or an error if the operation fails.
+                    ///
+                    /// # Type Parameters
+                    /// * [`R`]: The type of the expected response from the IOCTL operation. Must implement [`Default`].
+                    ///
+                    /// # Parameters
+                    /// * [`request`]: An [`IoCtlRequest`] containing the IOCTL command and optional data to send to the device.
+                    ///
+                    /// # Returns
+                    /// * [`Ok(IoCtlResponse<R>)`]: On success, returns a populated [`IoCtlResponse`] of type [`R`] which holds
+                    ///   the response to the request.
+                    /// * [`Err(WdfIoTargetError)`]: On failure, returns a [`WdfIoTargetError`] describing the nature of the error.
+                    ///
+                    /// # Errors
+                    /// * This function will return:
+                    ///   * [`WdfIoTargetState::IllegalState`]: If the device is not in a "Started" state.
+                    ///   * [`WdfIoTargetState::IoCtlTargetSendError`]: If sending the IOCTL request failed, providing detailed information
+                    ///     such as the command, NTSTATUS code, any optional input buffer, and bytes returned.
+                    ///
+                    /// # Key Operations
+                    /// 1. Validates that the device is in the "Started" state.
+                    /// 2. Builds the input and output buffers for the IOCTL operation.
+                    /// 3. Interacts with the device driver stack (e.g., via [`WdfIoTargetSendIoctlSynchronously`] in KMDF mode).
+                    /// 4. Processes the response or handles any errors arising from the operation.
+                    ///
+                    /// # Safety
+                    /// * Unsafe blocks are used for interacting with the KMDF runtime. These blocks ensure that the
+                    ///   required pointers for buffers are valid and the KMDF callback for sending IOCTL requests correctly
+                    ///   handles the data. Developer attention is required when working in "kmdf-runtime" mode.
+                    ///
+                    /// # Features
+                    /// This function includes conditional compilation specifically for the `test-runtime` feature:
+                    /// * Suppresses warnings for unused variables where certain parameters are not required during
+                    ///   testing scenarios.
+                    ///
+                    /// # Example
+                    /// ```rust
+                    /// // Example usage:
+                    /// let ioctl_request = IoCtlRequest::new(REQUEST_CODE, Some(input_data));
+                    /// let ioctl_response: Result<IoCtlResponse<ResponseData>, WdfIoTargetError> = device.send_ioctl(ioctl_request);
+                    ///
+                    /// match ioctl_response {
+                    ///     Ok(response) => println!("Response received: {:?}", response.data()),
+                    ///     Err(e) => eprintln!("Failed to send IOCTL request: {:?}", e),
+                    /// }
+                    /// ```
+                    ///
+                    /// # Dependencies
+                    /// This function relies on the following external components:
+                    /// * [`IoCtlRequest`]: Represents the IOCTL request, including the command and optional data.
+                    /// * [`IoCtlResponse`]: Represents the response from the IOCTL request.
+                    /// * [`WdfIoTargetError`]: Error types related to WDF IO targets.
+                    /// * KMDF APIs (if the ` kmdf-runtime ` feature is enabled).
+                    ///
+                    /// # Notes
+                    /// * Ensure you manage the lifetime and validity of `self` and buffers when interacting
+                    ///   with the KMDF runtime, as improper handling can lead to undefined behavior in unsafe blocks.
                     pub fn send_ioctl<R: Default>(
                         &self,
                         request: IoCtlRequest<Option<R>>,
@@ -334,4 +570,4 @@ mod private {
 }
 
 #[allow(unused)]
-pub use private::{Handle, HandleRaw, HandleRawMut, HandleRef, HandleMut};
+pub use private::{Handle, HandleRef, HandleMut};
