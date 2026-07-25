@@ -36,6 +36,7 @@ kmdf-runtime = ["minimal-runtime", "wdk-default"]
 test-runtime = ["minimal-runtime"]
 minimal-runtime = []
 wdk-examples = []
+unstable = ["wdk-nightly"]
 
 nightly = ["wdk-nightly"]
 hid = ["wdk-sys/hid"]
