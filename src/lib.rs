@@ -23,12 +23,10 @@ compile_error!(
 pub extern crate alloc;
 
 mod runtime;
-
-pub(crate) mod wdf;
+mod wdf;
 
 pub mod rt {
     #[cfg(feature = "kmdf-runtime")]
-    mod __kmdf {
     mod __kmdf_rt {
         pub use wdk;
         pub use wdk_sys;
@@ -36,18 +34,15 @@ pub mod rt {
 
         pub extern crate wdk_panic;
 
-        #[cfg(feature = "kmdf-runtime")]
         pub use crate::runtime::logging;
         pub use crate::runtime::utils;
-
-        pub(crate) use crate::runtime::kmdf;
         
         /// KMDFS internal callbacks
         pub use crate::runtime::kmdf as __cb;
     }
 
     #[cfg(feature = "kmdf-runtime")]
-    pub use __kmdf::*;
+    pub use __kmdf_rt::*;
 
     #[cfg(feature = "test-runtime")]
     pub use crate::runtime::test::*;
@@ -61,16 +56,20 @@ pub use wdk::println;
 
 mod __public_api {
     pub use crate::wdf::handle::*;
+    pub use crate::wdf::ioctl;
 
     /// Contains various WDF convertible vals
     pub use crate::wdf::values as vals;
 
     /// Contains WDF context types
     pub use crate::wdf::context as ctx;
+
+    /// Contains WDF builders
     pub use crate::wdf::builders as bd;
+
+    /// Contains WDF operators
     pub use crate::wdf::operators as op;
-    
-    pub use crate::wdf::ioctl;
 }
 
 pub use __public_api::*;
+pub use crate::wdf::generators as gens;
