@@ -1,32 +1,385 @@
-#[cfg(feature = "kmdf-runtime")]
-pub mod __cmd {
-    use core::ffi::c_void;
-    use wdk_sys::{call_unsafe_wdf_function_binding, PCWDF_OBJECT_CONTEXT_TYPE_INFO, WDFOBJECT};
+/// Compile-time safe conversion of a type's size into a ULONG.
+/// This avoids runtime panics and ensures KMDF ABI compatibility.
+///
+/// The macro performs:
+/// - A `size_of::<T>()`
+/// - A compile-time assertion that the size fits into ULONG
+/// - A cast to ULONG with clippy suppression
+///
+/// This is the correct approach for kernel-mode Rust, where runtime panics
+/// must be strictly avoided.
+#[macro_export]
+macro_rules! const_size_to_ulong {
+    ($t:ty) => {{
+            const SIZE: usize = core::mem::size_of::<$t>();
 
-    #[inline]
-    #[expect(clippy::missing_safety_doc, reason="This function only exist to expose this wdf binding to macros")]
-    pub unsafe fn __wdf_object_typed_ctx_worker(
-        wdf_obj: WDFOBJECT,
-        p_type_info: PCWDF_OBJECT_CONTEXT_TYPE_INFO,
-    ) -> *mut c_void {
-        call_unsafe_wdf_function_binding!(
-                WdfObjectGetTypedContextWorker,
-                wdf_obj,
-                p_type_info,
-            )
-    }
+            // Compile-time check: if KMDF ever breaks ABI, the driver won't compile.
+            const _: () = assert!(SIZE <= $crate::rt::wdk_sys::ULONG::MAX as usize);
+
+            #[allow(clippy::cast_possible_truncation)]
+            {
+                SIZE as $crate::rt::wdk_sys::ULONG
+            }
+        }};
 }
 
+/// A macro to safely cast a `usize` value to an `ULONG`.
+///
+/// This macro takes an expression, evaluates it as a `usize`, and attempts to cast it to
+/// the `ULONG` type from the `wdk_sys` module. It ensures type safety and prevents potential
+/// overflows in debug builds.
+///
+/// # Parameters
+/// - `$val:expr` - An expression that evaluates to a `usize` value to be cast to `ULONG`.
+///
+/// # Behavior
+/// - A let binding is used to store the input value locally in order to support intermediate
+///   local variables.
+/// - A debug assertion is included to ensure that the input value does not exceed the maximum
+///   value of `ULONG`. This assertion is only active in debug builds, allowing for extra
+///   safety during testing while preserving runtime performance in release builds.
+/// - After the check, the value is cast to an `ULONG` type. This cast allows potential
+///   truncation of the value, but it is considered safe due to the preceding assertion.
+///
+/// # Notes
+/// - This macro depends on the `wdk_sys` module and the `ULONG` type defined within it.
+/// - The macro is designed to perform efficiently, with any debug-specific validation
+///   optimized out in release builds.
+///
 /// # Example
+/// ```rust
+/// use my_crate::size_to_ulong;
+///
+/// let size: usize = 42;
+/// let ulong_value = size_to_ulong!(size);
+/// assert_eq!(ulong_value as usize, size);
 /// ```
-/// unsafe {
-///     call_ntstatus_wdf_binding!(
-///         WdfDeviceCreate,
-///         &raw mut device_init,
-///         &raw mut attrs,
-///         &raw mut device_handle)
-/// }?;
+///
+/// # Debug Assertion
+/// In debug builds, if the input value exceeds the maximum value of `ULONG`, the macro will
+/// panic. Ensure that `$val` is always within the valid range to avoid runtime errors.
+///
+/// # Clippy Allowance
+/// A `clippy::cast_possible_truncation` lint is suppressed within the macro. This is because
+/// the truncation risk is explicitly mitigated by the debug assertion.
+#[macro_export]
+macro_rules! size_to_ulong {
+    ($val:expr) => {{
+           // Use a standard runtime let binding to support local variables
+            let value: usize = $val;
+
+            // This assertion is evaluated in debug builds.
+            // In release builds, LLVM is extremely smart and will completely optimize
+            // this assertion away into zero CPU instructions if the value is known to be safe.
+            debug_assert!(value <= $crate::rt::wdk_sys::ULONG::MAX as usize);
+
+            #[allow(clippy::cast_possible_truncation)]
+            {
+                value as $crate::rt::wdk_sys::ULONG
+            }
+    }};
+}
+
+/// A macro for handling NTSTATUS error codes and optionally logging an error message.
+///
+/// This macro checks if the provided status code is negative (indicative of an error) and performs
+/// one of the following actions based on the supplied arguments:
+/// - Without a message: Directly returns the status if it's an error.
+/// - With a message: Logs the error message, interprets the NTSTATUS code description, and returns the status.
+///
+/// # Usage
+///
+/// - Pass only the status code to quickly handle errors without logging:
 /// ```
+/// let status = some_function_returning_status();
+/// if_nterror_return!(status);
+/// ```
+///
+/// - Pass both the status code and a message to log the error before handling:
+/// ```
+/// let status = some_function_returning_status();
+/// if_nterror_return!(status, "An error occurred");
+/// ```
+///
+/// # Parameters
+///
+/// - `$status:expr`: The NTSTATUS code to check. If it's less than 0 (error), the macro will trigger a return.
+/// - `$message:literal` (optional): A literal string describing the context of the error, which will be logged if an error is detected.
+///
+/// # Behavior
+///
+/// - If the provided status is an error (negative value):
+///   - In the single-argument variant: Returns the status immediately.
+///   - In the two-argument variant: Logs the error message along with the NTSTATUS code and its description, then returns the status.
+/// - If the status is not negative (success or informational):
+///   - Returns the status without any action.
+///
+/// # Example
+///
+/// ```rust
+/// use some_crate::if_nterror_return;
+///
+/// fn example_function() -> i32 {
+///     let status = -1; // Simulated NTSTATUS error
+///
+///     if_nterror_return!(status, "Failed to execute example_function");
+///
+///     // Code here won't execute if `status` is an error
+///     0
+/// }
+/// ```
+///
+/// In the example above, if the `status` is negative, the macro logs the error and returns the status.
+/// Otherwise, the function continues executing normally.
+///
+/// # Notes
+///
+/// This macro assumes the presence of a logging utility (such as `$crate::error!`) and a utility
+/// function `$crate::utils::helpers::ntstatus_name` for resolving the symbolic name of an NTSTATUS code.
+///
+/// # Errors
+///
+/// - Returns control out of the calling function with the provided error status when an error is detected.
+#[macro_export]
+macro_rules! if_nterror_return {
+    ($status:expr) => {{
+            let status = $status;
+
+            if status < 0 {
+                return status;
+            }
+
+            status
+        }};
+
+    ($status:expr, $message:literal) => {{
+            let status = $status;
+
+            if status < 0 {
+                $crate:error!(
+                    "{}: {} ({:#x})",
+                    $message,
+                    $crate::utils::helpers::ntstatus_name(status),
+                    status
+                );
+                return status;
+            }
+
+            status
+        }};
+}
+
+/// A macro to simplify error handling by evaluating an expression that returns a `Result` and
+/// conditionally returning an NTSTATUS error code on failure. Several variants are provided to
+/// customize the handling logic, including logging error messages.
+///
+/// # Variants
+///
+/// 1. **Basic Handling**
+///    ```rust
+///    if_nterror_return_ntstatus!(result_expr)
+///    ```
+///    - Evaluates the `result_expr` (which must return a `Result`).
+///    - If the result is `Ok`, returns the unwrapped value.
+///    - If the result is `Err`, immediately returns the NTSTATUS error code from the function.
+///
+/// 2. **Basic Handling with Logging**
+///    ```rust
+///    if_nterror_return_ntstatus!(result_expr, log_err, "Error message")
+///    ```
+///    - Evaluates the `result_expr`.
+///    - Logs an error message with the provided literal string and the NTSTATUS error code if the result is `Err`.
+///    - Returns `STATUS_UNSUCCESSFUL` in case of an error.
+///
+/// 3. **Custom Error Message Logging**
+///    ```rust
+///    if_nterror_return_ntstatus!(result_expr, "Error message")
+///    ```
+///    - Similar to the variant above, but uses the NTSTATUS error directly from the `Err` variant
+///      and logs the provided `message` along with the error details.
+///
+/// 4. **Custom NTSTATUS Return Code**
+///    ```rust
+///    if_nterror_return_ntstatus!(result_expr, ntstatus_code)
+///    ```
+///    - Evaluates the `result_expr`.
+///    - If `Err` is encountered, immediately returns the specified `ntstatus_code`.
+///
+/// 5. **Custom NTSTATUS Code with Logging**
+///    ```rust
+///    if_nterror_return_ntstatus!(result_expr, ntstatus_code, "Error message")
+///    ```
+///    - Combines custom NTSTATUS return functionality with error logging.
+///    - Logs the provided `message` and the custom NTSTATUS error code if `result_expr` is an `Err`.
+///
+/// # Parameters
+///
+/// - `$expr`: The expression to evaluate, which must return a `Result`.
+/// - `log_err`: A flag to enable logging.
+/// - `$message`: A string literal to include in the log for contextual error information.
+/// - `$ntstatus`: A custom NTSTATUS error code to return in case of an error.
+///
+/// # Examples
+///
+/// ## Using the basic macro to check for an NTSTATUS error
+/// ```rust
+/// let result: Result<u32, i32> = Err(0xC0000001); // Simulated NTSTATUS error
+/// let value = if_nterror_return_ntstatus!(result);
+/// // The macro will immediately return the `0xC0000001` error code if `result` is `Err`.
+/// ```
+///
+/// ## Adding a log message on error
+/// ```rust
+/// let result: Result<u32, i32> = Err(0xC0000001);
+/// let value = if_nterror_return_ntstatus!(log_err, result, "Operation failed");
+/// // Logs: "Operation failed with STATUS: 0xC0000001", and returns STATUS_UNSUCCESSFUL.
+/// ```
+///
+/// ## Using a custom NTSTATUS error code
+/// ```rust
+/// let result: Result<u32, i32> = Err(0xC0000001);
+/// let value = if_nterror_return_ntstatus!(result, 0xC0000022, "Access denied");
+/// // Logs: "Access denied with status 0xC0000022", and returns 0xC0000022.
+/// ```
+#[macro_export]
+macro_rules! if_nterror_return_ntstatus {
+    ($expr:expr) => {{
+        match $expr {
+            Ok(value) => value,
+            Err(ntstatus) => {
+                return ntstatus
+            }
+        }
+    }};
+    (log_err, $expr:expr, $message:literal) => {{
+        match $expr {
+            Ok(value) => value,
+            Err(status_err) => {
+                $crate:error!(
+                    "{} with STATUS: {:?}",
+                    $message,
+                    status_err,
+                );
+                return STATUS_UNSUCCESSFUL
+            }
+        }
+    }};
+
+    ($result:expr, $message:literal) => {{
+        match $result {
+            Ok(value) => value,
+            Err(ntstatus) => {
+                $crate:error!(
+                    "{} with STATUS: {:?}",
+                    $message,
+                    ntstatus,
+                );
+
+                return ntstatus;
+            }
+        }
+    }};
+
+    ($result:expr, $ntstatus:expr) => {{
+        match $result {
+            Ok(value) => value,
+            Err(_) => {
+                return $ntstatus;
+            }
+        }
+    }};
+
+    ($result:expr, $ntstatus:expr, $message:literal) => {{
+        match $result {
+            Ok(value) => value,
+            Err(_) => {
+                $crate:error!(
+                    "{} with status {}",
+                    $message,
+                    $ntstatus,
+                );
+
+                return $ntstatus;
+            }
+        }
+    }};
+}
+
+/// A macro to simplify converting NTSTATUS values into `Result` types.
+///
+/// This macro evaluates the given NTSTATUS value and determines whether it represents
+/// a success or an error. NTSTATUS values less than 0 typically indicate an error.
+/// In case of a failure, the macro optionally allows logging an error message
+/// or name associated with the received NTSTATUS value.
+///
+/// # Usage
+/// - **Single argument (`$status`)**: Returns an `Ok(status)` if the status indicates success, or directly returns the failing `status`.
+/// - **Two arguments (`$status`, `$message`)**: Logs an error message and returns an `Err(status)` if it indicates failure.
+///   Otherwise, returns `Ok(status)`.
+///
+/// # Parameters
+/// - `$status`: An expression representing an NTSTATUS value to evaluate.
+/// - `$message`: A string literal message (optional) to be logged when the status indicates an error.
+///
+/// # Return Value
+/// - When `$message` is not provided:
+///   - Returns an `Ok(status)` if `$status` indicates success (`status >= 0`).
+///   - Returns the `status` directly if it indicates failure (`status < 0`).
+/// - When `$message` is provided:
+///   - Logs the provided `$message` along with the NTSTATUS name and hex value, and returns an `Err(status)` if it indicates failure.
+///   - Returns `Ok(status)` if `$status` indicates success.
+///
+/// # Examples
+///
+/// ## Example 1: Without logging
+/// ```rust
+/// let nt_status = some_function_that_returns_ntstatus();
+/// let result = from_ntstatus_to_ntresult!(nt_status);
+/// match result {
+///     Ok(status) => println!("Operation succeeded with status: {:#x}", status),
+///     Err(status) => println!("Operation failed with status: {:#x}", status),
+/// }
+/// ```
+///
+/// ## Example 2: With logging
+/// ```rust
+/// let nt_status = some_function_that_returns_ntstatus();
+/// let result = from_ntstatus_to_ntresult!(nt_status, "Operation failed");
+/// if let Err(err) = result {
+///     println!("Logged error with NTSTATUS: {:#x}", err);
+/// }
+/// ```
+///
+/// # Notes
+/// - The macro assumes the availability of `$crate:error!` for logging and `$crate::utils::helpers::ntstatus_name(status)`
+///   for NTSTATUS name conversion. Ensure these utilities are correctly defined in the crate where the macro is used.
+#[macro_export]
+macro_rules! from_ntstatus_to_ntresult {
+    ($status:expr) => {{
+        let status = $status;
+
+        if status < 0 {
+            return Ok(status);
+        }
+
+        status
+    }};
+    ($status:expr, $message:literal) => {{
+        let status = $status;
+
+        if status < 0 {
+            $crate:error!(
+                "{}: {} ({:#x})",
+                $message,
+                $crate::utils::helpers::ntstatus_name(status),
+                status
+            );
+            return Err(status);
+        }
+
+        Ok(status)
+    }};
+}
 
 /// A macro to invoke a Windows Driver Framework (WDF) function, handling NTSTATUS
 /// values and converting them into a result type.
@@ -97,4 +450,3 @@ macro_rules! call_ntstatus_wdf_unsafe_binding {
             )
         )}};
     }
-pub(crate) use call_ntstatus_wdf_unsafe_binding;
