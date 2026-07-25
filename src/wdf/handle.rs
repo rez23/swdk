@@ -9,8 +9,6 @@ mod private {
     pub struct Handle<H = HANDLE>(H);
     pub type HandleRef<'a, T = HANDLE> = Handle<&'a T>;
     pub type HandleMut<'a, T = HANDLE> = Handle<&'a mut T>;
-    pub type HandleRaw<'a, T = HANDLE> = Handle<*const T>;
-    pub type HandleRawMut<'a, T = HANDLE> = Handle<*mut T>;
 
     mod _impls {
         use crate::{Handle, HandleRef};
