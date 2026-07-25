@@ -56,12 +56,36 @@ mod private {
         }
     }
 
-    /// IoCtlResponse<T> is a Rust handle to an ioctl response
-    /// knows how to describe T as a WDF_MEMORY_DESCRIPTOR
-    /// through `Self::build()`
+    /// A data type that is able to represent a fillable IOCTL WDF Response
+    ///
+    /// # Type Parameters
+    /// - [`T`]: The type of the response payload, which must implement the [`Default`] trait.
+    ///
+    /// # Usage
+    /// This struct is typically used to encapsulate the response data returned from ioctl operations
+    /// in a structured and type-safe manner. The wrapped type `T` must have a `Default` implementation
+    /// to ensure it can be initialized with default values.
     pub struct IoCtlResponse<T: Default>(T);
 
-    /// An IOCTL request from an IO target buffer
+    /// A structure representing an I/O control (ioctl) request.
+    ///
+    /// `IoCtlRequest` encapsulates an ioctl operation, which consists of a command
+    /// and associated data.
+    ///
+    /// # Type Parameters
+    /// - [`T`]: The type of the data associated with the ioctl command.
+    ///
+    /// # Examples
+    /// ```rust
+    /// // Example usage of IoCtlRequest
+    /// let command = IoCtlCommand::SomeCommand;
+    /// let data = SomeDataStruct { value: 42 };
+    /// let request = IoCtlRequest(command, data);
+    /// // Now `request` can be passed to an ioctl handler.
+    /// ```
+    ///
+    /// This structure provides a lightweight, type-safe way to encapsulate ioctl
+    /// requests.
     pub struct IoCtlRequest<T>(IoCtlCommand, T);
 
     mod _ioctl_resp_impls {
