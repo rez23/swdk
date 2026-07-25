@@ -25,13 +25,17 @@ mod private {
 
     #[inline]
     #[allow(dead_code)]
-    pub fn from_option_to_mut_ptr<T>(value: Option<&mut T>) -> *mut T {
+    pub fn from_option_to_mut_ptr<T>(
+        value: Option<&mut T>,
+    ) -> *mut T {
         value.map_or(ptr::null_mut(), ptr::from_mut)
     }
 
     #[inline]
     #[allow(dead_code)]
-    pub fn from_option_to_ptr<T>(value: Option<&T>) -> *const T {
+    pub fn from_option_to_ptr<T>(
+        value: Option<&T>,
+    ) -> *const T {
         value.map_or(ptr::null(), ptr::from_ref)
     }
 }
