@@ -1,4 +1,4 @@
-use swdk::val::WdfIoTargetState;
+use swdk::vals::WdfIoTargetState;
 
 #[test]
 fn started_roundtrip() {

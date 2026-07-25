@@ -50,7 +50,7 @@ mod _values {
         #[cfg(feature = "test-runtime")]
         use crate::rt::test_rt::*;
 
-        use crate::val::_values::WdfIoTargetState;
+        use crate::vals::_values::WdfIoTargetState;
         use wdk_sys::WDF_IO_TARGET_STATE;
         use wdk_sys::_WDF_IO_TARGET_STATE::{WdfIoTargetClosed, WdfIoTargetClosedForQueryRemove, WdfIoTargetDeleted, WdfIoTargetPurged, WdfIoTargetStarted, WdfIoTargetStopped};
 

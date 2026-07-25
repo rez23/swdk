@@ -30,6 +30,7 @@ pub(crate) mod wdf;
 pub mod rt {
     #[cfg(feature = "kmdf-runtime")]
     mod __kmdf {
+    mod __kmdf_rt {
         pub use wdk;
         pub use wdk_sys;
         pub use wdk_alloc;
@@ -41,6 +42,9 @@ pub mod rt {
         pub use crate::runtime::utils;
 
         pub(crate) use crate::runtime::kmdf;
+        
+        /// KMDFS internal callbacks
+        pub use crate::runtime::kmdf as __cb;
     }
 
     #[cfg(feature = "kmdf-runtime")]
@@ -59,8 +63,10 @@ pub use wdk::println;
 mod __public_api {
     pub use crate::wdf::handle::*;
 
-    pub use crate::wdf::values as val;
-    pub use crate::wdf::generators as gens;
+    /// Contains various WDF convertible vals
+    pub use crate::wdf::values as vals;
+
+    /// Contains WDF context types
     pub use crate::wdf::context as ctx;
     pub use crate::wdf::builders as bd;
     pub use crate::wdf::operators as op;

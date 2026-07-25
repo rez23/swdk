@@ -57,7 +57,8 @@ mod private {
                 };
                 use core::ptr;
                 use wdk_sys::{WDFOBJECT, WDF_NO_HANDLE};
-                use crate::rt::kmdf::wdf_object_create;
+                use crate::rt::__cb;
+                use crate::wdf::handle::private::_impls::_kmdf;
 
                 impl AsWdfOwner<WDFOBJECT> for Handle<WDFOBJECT> {
                     type Conf = ();
@@ -76,7 +77,7 @@ mod private {
 
                         #[cfg(feature = "kmdf-runtime")]
                         unsafe {
-                            wdf_object_create(
+                            __cb::wdf_object_create(
                                 attrs_ptr,
                                 &mut obj,
                             )
@@ -98,7 +99,7 @@ mod private {
 
                 use wdk_sys::{PWDFDEVICE_INIT, WDFDEVICE, WDF_NO_HANDLE};
                 use crate::Handle;
-                use crate::rt::kmdf::wdf_device_create;
+                use crate::rt::__cb;
 
                 impl AsWdfOwner<WDFDEVICE> for Handle<WDFDEVICE> {
                     type Conf = ();
@@ -124,7 +125,7 @@ mod private {
                         #[cfg(feature = "kmdf-runtime")]
                         // SAFETY: `driver_init` is safe because is passed by WDF
                         unsafe {
-                            wdf_device_create(
+                            __cb::wdf_device_create(
                                 dev_init_ptr,
                                 attrs_ptr,
                                 device_ptr,
@@ -157,7 +158,7 @@ mod private {
 
                 use wdk_sys::{PDRIVER_OBJECT, WDFDRIVER, WDF_NO_HANDLE};
                 use crate::Handle;
-                use crate::rt::kmdf::wdf_driver_create;
+                use crate::rt::__cb;
 
                 impl AsWdfOwner<WDFDRIVER> for Handle<WDFDRIVER> {
                     type Conf = WdfDriverConf;
@@ -185,7 +186,7 @@ mod private {
                         #[cfg(feature = "kmdf-runtime")]
                         // SAFETY: `driver_init` is safe because is passed by WDF
                         unsafe {
-                            wdf_driver_create(
+                            __cb::wdf_driver_create(
                                 driver_obj_ptr,
                                 registry_path,
                                 attrs_ptr,
@@ -214,19 +215,14 @@ mod private {
                     AsWdfOwned, NtResult,
                 };
                 use crate::runtime::utils::from_option_to_ptr;
-                use crate::val::WdfIoTargetError::{
+                use crate::vals::WdfIoTargetError::{
                     IllegalState,
                 };
-                use crate::val::{
-                    WdfIoTargetError, WdfIoTargetState,
-                };
+                use crate::vals::{IoCtlTargetSendInfo, WdfIoTargetError, WdfIoTargetState};
                 use wdk_sys::{ULONG_PTR, WDFDEVICE, WDFIOTARGET};
 
                 #[cfg(feature = "kmdf-runtime")]
-                use crate::val::IoCtlTargetSendInfo;
-
-                #[cfg(feature = "kmdf-runtime")]
-                use crate::val::WdfIoTargetError::IoCtlTargetSendError;
+                use crate::vals::WdfIoTargetError::IoCtlTargetSendError;
 
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::op::{AsOptionalBuff, AsRaw, AsRawWithBorrow};
@@ -234,7 +230,7 @@ mod private {
                 #[cfg(feature = "kmdf-runtime")]
                 use wdk_sys::STATUS_UNSUCCESSFUL;
                 use crate::Handle;
-                use crate::rt::kmdf::wdf_get_target_io;
+                use crate::rt::__cb;
                 use crate::runtime::kmdf::{wdf_get_targetio_state, wdf_request_send_async};
 
                 impl AsWdfOwned<WDFIOTARGET> for Handle<WDFIOTARGET> {
@@ -245,7 +241,7 @@ mod private {
                         #[cfg(feature = "kmdf-runtime")]{
                             let device = owner;
                             let io_target = unsafe {
-                                wdf_get_target_io(*device)
+                                __cb::wdf_get_target_io(*device)
                             };
 
                             if io_target.is_null() {

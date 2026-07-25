@@ -1,13 +1,12 @@
 #[cfg(feature = "test-runtime")]
 use crate::rt::test_rt::*;
 
-use crate::const_size_to_ulong;
 use crate::ctx::WdfCtxNoneDesc;
-use crate::Handle;
+use crate::{const_size_to_ulong, Handle};
 use crate::op::{
     AsBuilder, AsCtxDescriptor, AsRaw,
 };
-use crate::val::{WdfExecutionLevel, WdfSyncScope};
+use crate::vals::{WdfExecutionLevel, WdfSyncScope};
 use core::ptr;
 use wdk_sys::{PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PFN_WDF_DRIVER_DEVICE_ADD, PFN_WDF_DRIVER_UNLOAD, PFN_WDF_OBJECT_CONTEXT_CLEANUP, PFN_WDF_OBJECT_CONTEXT_DESTROY, PUNICODE_STRING, ULONG, WDFOBJECT, WDF_DRIVER_CONFIG, WDF_EXECUTION_LEVEL, WDF_OBJECT_ATTRIBUTES, WDF_SYNCHRONIZATION_SCOPE};
 

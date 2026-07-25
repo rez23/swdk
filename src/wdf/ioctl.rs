@@ -16,13 +16,13 @@ mod private {
         #[cfg(feature = "test-runtime")]
         use crate::rt::test_rt::*;
 
-        use crate::size_to_ulong;
         use core::ptr;
         use wdk_sys::{
             _WDF_MEMORY_DESCRIPTOR__bindgen_ty_1,
             _WDF_MEMORY_DESCRIPTOR__bindgen_ty_1__bindgen_ty_1,
             WDF_MEMORY_DESCRIPTOR, _WDF_MEMORY_DESCRIPTOR_TYPE,
         };
+        use crate::size_to_ulong;
 
         #[allow(dead_code)]
         pub fn build_for_data_type<T>(elem: &T) -> WDF_MEMORY_DESCRIPTOR {

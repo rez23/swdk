@@ -10,9 +10,9 @@ pub mod operations {
     #[cfg(feature = "test-runtime")]
     use crate::rt::test_rt::*;
 
-    use crate::{const_size_to_ulong, size_to_ulong};
     use core::ptr::from_ref;
     use wdk_sys::{PWDF_OBJECT_CONTEXT_TYPE_INFO, WDFOBJECT, WDF_OBJECT_CONTEXT_TYPE_INFO};
+    use crate::{const_size_to_ulong, size_to_ulong};
 
     pub unsafe fn build_for_data_type<T: 'static>(
         addrs_of: *const T,

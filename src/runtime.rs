@@ -345,9 +345,8 @@ mod __runtime {
     pub mod kmdf {
         use core::ffi::c_void;
 
-        use wdk_sys::{PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PUNICODE_STRING, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_REQUEST_SEND_OPTIONS, PWDFDEVICE_INIT, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, WDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, call_unsafe_wdf_function_binding, PCUNICODE_STRING};
-
-        use crate::gens::call_ntstatus_wdf_unsafe_binding;
+        use wdk_sys::{PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, call_unsafe_wdf_function_binding};
+        use crate::call_ntstatus_wdf_unsafe_binding;
         use crate::ioctl::commands::IoCtlCommand;
         use crate::op::NtResult;
 
@@ -457,6 +456,6 @@ pub mod utils;
 pub mod logging;
 
 #[cfg(feature = "kmdf-runtime")]
-pub(crate) use __runtime::kmdf;
+pub use __runtime::kmdf;
 #[cfg(feature = "test-runtime")]
-pub(crate) use __runtime::test;
+pub use __runtime::test;
