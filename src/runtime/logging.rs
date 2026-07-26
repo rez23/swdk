@@ -117,7 +117,7 @@ mod private {
     }
 
     #[must_use]
-    #[allow(dead_code)]
+    #[inline]
     pub fn ntstatus_name(status: NTSTATUS) -> &'static str {
         match status {
             wdk_sys::STATUS_SUCCESS => "STATUS_SUCCESS",

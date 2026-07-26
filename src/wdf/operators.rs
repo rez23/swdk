@@ -1,8 +1,5 @@
 mod _concepts {
-    use wdk_sys::NTSTATUS;
-
-    #[cfg(feature = "test-runtime")]
-    use crate::rt::test_rt::*;
+    use crate::rt::wdk_sys::NTSTATUS;
 
     pub type NtResult<T = ()> = Result<T, NTSTATUS>;
 }
@@ -11,13 +8,11 @@ mod _operators {
     use core::borrow::Borrow;
     use core::ptr;
 
-    use wdk_sys::PCWDF_OBJECT_CONTEXT_TYPE_INFO;
+    use crate::rt::wdk_sys::PCWDF_OBJECT_CONTEXT_TYPE_INFO;
 
     use crate::bd::WdfObjAttrs;
     use crate::ctx::WdfCtxNoneDesc;
     use crate::op::_concepts::NtResult;
-    #[cfg(feature = "test-runtime")]
-    use crate::rt::test_rt::*;
     use crate::HandleRef;
 
     /// A trait providing utility methods for working with raw pointers.

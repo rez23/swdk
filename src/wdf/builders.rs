@@ -1,18 +1,21 @@
-#[cfg(feature = "test-runtime")]
-use crate::rt::test_rt::*;
+use core::ptr;
 
 use crate::ctx::WdfCtxNoneDesc;
-use crate::{const_size_to_ulong, Handle};
-use crate::op::{
-    AsBuilder, AsCtxDescriptor, AsRaw,
+use crate::op::{AsBuilder, AsCtxDescriptor, AsRaw};
+use crate::rt::wdk_sys::{
+    PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO,
+    PFN_WDF_DRIVER_DEVICE_ADD, PFN_WDF_DRIVER_UNLOAD,
+    PFN_WDF_OBJECT_CONTEXT_CLEANUP,
+    PFN_WDF_OBJECT_CONTEXT_DESTROY, ULONG,
+    WDF_DRIVER_CONFIG, WDF_EXECUTION_LEVEL,
+    WDF_OBJECT_ATTRIBUTES, WDF_SYNCHRONIZATION_SCOPE,
+    WDFOBJECT,
 };
 use crate::vals::{WdfExecutionLevel, WdfSyncScope};
-use core::ptr;
-use wdk_sys::{PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PFN_WDF_DRIVER_DEVICE_ADD, PFN_WDF_DRIVER_UNLOAD, PFN_WDF_OBJECT_CONTEXT_CLEANUP, PFN_WDF_OBJECT_CONTEXT_DESTROY, PUNICODE_STRING, ULONG, WDFOBJECT, WDF_DRIVER_CONFIG, WDF_EXECUTION_LEVEL, WDF_OBJECT_ATTRIBUTES, WDF_SYNCHRONIZATION_SCOPE};
+use crate::{Handle, const_size_to_ulong};
 
-pub struct WdfObjAttrs<
-    D: AsCtxDescriptor = WdfCtxNoneDesc,
-> {
+pub struct WdfObjAttrs<D: AsCtxDescriptor = WdfCtxNoneDesc>
+{
     pub on_cleanup: PFN_WDF_OBJECT_CONTEXT_CLEANUP,
     pub on_destroy: PFN_WDF_OBJECT_CONTEXT_DESTROY,
     pub sync_scope: WdfSyncScope,
@@ -21,9 +24,7 @@ pub struct WdfObjAttrs<
     _descriptor: D,
 }
 
-impl<D: AsCtxDescriptor> AsBuilder
-    for WdfObjAttrs<D>
-{
+impl<D: AsCtxDescriptor> AsBuilder for WdfObjAttrs<D> {
     type Descriptor<'b>
         = WDF_OBJECT_ATTRIBUTES
     where
@@ -55,9 +56,7 @@ impl<D: AsCtxDescriptor> AsBuilder
     }
 }
 
-impl<D: AsCtxDescriptor> Default
-    for WdfObjAttrs<D>
-{
+impl<D: AsCtxDescriptor> Default for WdfObjAttrs<D> {
     fn default() -> Self {
         Self {
             sync_scope: WdfSyncScope::None,

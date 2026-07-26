@@ -7,9 +7,10 @@ mod __runtime {
         reason = "This crate emulates Windows kernel runtime"
     )]
     pub mod test {
+        pub use crate::runtime::utils;
+
         pub mod wdk_sys {
             use core::ffi::c_void;
-
             #[macro_export]
             macro_rules! call_unsafe_wdf_function_binding {
                 ($func:ident $(, $args:expr)* $(,)?) => {{}};

@@ -1,17 +1,25 @@
-#[cfg(feature = "test-runtime")]
-use crate::rt::test_rt::*;
-
-use crate::op::{AsCtxDescriptor, AsNoneCtxDesc, AsNoneCtxUnique, AsUnique};
 use core::ptr;
-use wdk_sys::{PCWDF_OBJECT_CONTEXT_TYPE_INFO, WDF_OBJECT_CONTEXT_TYPE_INFO};
 
-#[expect(clippy::missing_safety_doc, reason="This is an internal API")]
+use crate::op::{
+    AsCtxDescriptor, AsNoneCtxDesc, AsNoneCtxUnique,
+    AsUnique,
+};
+use crate::rt::wdk_sys::{
+    PCWDF_OBJECT_CONTEXT_TYPE_INFO,
+    WDF_OBJECT_CONTEXT_TYPE_INFO,
+};
+
+#[expect(
+    clippy::missing_safety_doc,
+    reason = "This is an internal API"
+)]
 pub mod operations {
-    #[cfg(feature = "test-runtime")]
-    use crate::rt::test_rt::*;
-
     use core::ptr::from_ref;
-    use wdk_sys::{PWDF_OBJECT_CONTEXT_TYPE_INFO, WDFOBJECT, WDF_OBJECT_CONTEXT_TYPE_INFO};
+
+    use crate::rt::wdk_sys::{
+        PWDF_OBJECT_CONTEXT_TYPE_INFO,
+        WDF_OBJECT_CONTEXT_TYPE_INFO, WDFOBJECT,
+    };
     use crate::{const_size_to_ulong, size_to_ulong};
 
     pub unsafe fn build_for_data_type<T: 'static>(
@@ -19,10 +27,18 @@ pub mod operations {
         type_name: &str,
     ) -> WDF_OBJECT_CONTEXT_TYPE_INFO {
         WDF_OBJECT_CONTEXT_TYPE_INFO {
-            Size: const_size_to_ulong!(WDF_OBJECT_CONTEXT_TYPE_INFO),
-            ContextSize: size_to_ulong!(size_of::<T>()) as usize,
-            ContextName: type_name.as_bytes().as_ptr().cast(),
-            UniqueType: core::ptr::addr_of!(addrs_of).cast_mut().cast(),
+            Size: const_size_to_ulong!(
+                WDF_OBJECT_CONTEXT_TYPE_INFO
+            ),
+            ContextSize: size_to_ulong!(size_of::<T>())
+                as usize,
+            ContextName: type_name
+                .as_bytes()
+                .as_ptr()
+                .cast(),
+            UniqueType: core::ptr::addr_of!(addrs_of)
+                .cast_mut()
+                .cast(),
             EvtDriverGetUniqueContextType: None,
         }
     }
@@ -32,9 +48,15 @@ pub mod operations {
         type_name: &str,
     ) -> WDF_OBJECT_CONTEXT_TYPE_INFO {
         WDF_OBJECT_CONTEXT_TYPE_INFO {
-            Size: const_size_to_ulong!(WDF_OBJECT_CONTEXT_TYPE_INFO),
-            ContextSize: size_to_ulong!(size_of::<T>()) as usize,
-            ContextName: type_name.as_bytes().as_ptr().cast(),
+            Size: const_size_to_ulong!(
+                WDF_OBJECT_CONTEXT_TYPE_INFO
+            ),
+            ContextSize: size_to_ulong!(size_of::<T>())
+                as usize,
+            ContextName: type_name
+                .as_bytes()
+                .as_ptr()
+                .cast(),
             UniqueType: from_ref(data).cast(),
             EvtDriverGetUniqueContextType: None,
         }
@@ -46,8 +68,12 @@ pub mod operations {
         data: PWDF_OBJECT_CONTEXT_TYPE_INFO,
         handle: WDFOBJECT,
     ) -> *const T {
-        wdk_sys::call_unsafe_wdf_function_binding!(WdfObjectGetTypedContextWorker, handle, data,)
-            .cast::<T>()
+        wdk_sys::call_unsafe_wdf_function_binding!(
+            WdfObjectGetTypedContextWorker,
+            handle,
+            data,
+        )
+        .cast::<T>()
     }
 
     #[cfg(feature = "kmdf-runtime")]
@@ -56,8 +82,12 @@ pub mod operations {
         data: PWDF_OBJECT_CONTEXT_TYPE_INFO,
         handle: WDFOBJECT,
     ) -> *mut T {
-        wdk_sys::call_unsafe_wdf_function_binding!(WdfObjectGetTypedContextWorker, handle, data,)
-            .cast()
+        wdk_sys::call_unsafe_wdf_function_binding!(
+            WdfObjectGetTypedContextWorker,
+            handle,
+            data,
+        )
+        .cast()
     }
 }
 
@@ -65,14 +95,19 @@ pub mod operations {
 pub struct WdfObjCtxTypeInfo(WDF_OBJECT_CONTEXT_TYPE_INFO);
 unsafe impl Sync for WdfObjCtxTypeInfo {}
 impl WdfObjCtxTypeInfo {
-    pub const fn new(inner: WDF_OBJECT_CONTEXT_TYPE_INFO) -> Self {
+    pub const fn new(
+        inner: WDF_OBJECT_CONTEXT_TYPE_INFO,
+    ) -> Self {
         Self(inner)
     }
 }
 
 unsafe impl AsUnique for WdfObjCtxTypeInfo {
-    unsafe fn unique(&self) -> PCWDF_OBJECT_CONTEXT_TYPE_INFO {
-        let inner = core::ptr::from_ref::<Self>(self).cast::<WDF_OBJECT_CONTEXT_TYPE_INFO>();
+    unsafe fn unique(
+        &self,
+    ) -> PCWDF_OBJECT_CONTEXT_TYPE_INFO {
+        let inner = core::ptr::from_ref::<Self>(self)
+            .cast::<WDF_OBJECT_CONTEXT_TYPE_INFO>();
         // SAFETY: This dereference is sound since the underlying
         // WDF_OBJECT_CONTEXT_TYPE_INFO is guaranteed to have the same memory
         // layout as WDFObjectContextTypeInfo since WDFObjectContextTypeInfo is
@@ -85,9 +120,10 @@ unsafe impl AsUnique for WdfObjCtxTypeInfo {
 #[derive(Default)]
 pub struct WdfCtxNull;
 unsafe impl AsUnique for WdfCtxNull {
-
     /// Returns a null pointer when no ctx object
-    unsafe fn unique(&self) -> PCWDF_OBJECT_CONTEXT_TYPE_INFO {
+    unsafe fn unique(
+        &self,
+    ) -> PCWDF_OBJECT_CONTEXT_TYPE_INFO {
         ptr::null()
     }
 }

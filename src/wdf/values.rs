@@ -1,10 +1,10 @@
 mod _values {
-    #[cfg(feature = "test-runtime")]
-    use crate::rt::test_rt::*;
+    use alloc::vec::Vec;
 
     use crate::ioctl::commands::IoCtlCommand;
-    use alloc::vec::Vec;
-    use wdk_sys::{NTSTATUS, WDF_IO_TARGET_STATE};
+    use crate::rt::wdk_sys::{
+        NTSTATUS, WDF_IO_TARGET_STATE,
+    };
 
     #[derive(Debug)]
     pub struct IoCtlTargetSendInfo {
@@ -45,14 +45,16 @@ mod _values {
         IllegalState(WdfIoTargetState),
         IoCtlTargetSendError(IoCtlTargetSendInfo),
     }
-    
-    mod _impls {
-        #[cfg(feature = "test-runtime")]
-        use crate::rt::test_rt::*;
 
+    mod _impls {
+        use crate::rt::wdk_sys::_WDF_IO_TARGET_STATE::{
+            WdfIoTargetClosed,
+            WdfIoTargetClosedForQueryRemove,
+            WdfIoTargetDeleted, WdfIoTargetPurged,
+            WdfIoTargetStarted, WdfIoTargetStopped,
+        };
+        use crate::rt::wdk_sys::WDF_IO_TARGET_STATE;
         use crate::vals::_values::WdfIoTargetState;
-        use wdk_sys::WDF_IO_TARGET_STATE;
-        use wdk_sys::_WDF_IO_TARGET_STATE::{WdfIoTargetClosed, WdfIoTargetClosedForQueryRemove, WdfIoTargetDeleted, WdfIoTargetPurged, WdfIoTargetStarted, WdfIoTargetStopped};
 
         impl From<WdfIoTargetState> for WDF_IO_TARGET_STATE {
             fn from(

@@ -13,11 +13,8 @@ mod private {
         pub const IOCTL_HID_GET_PREPARSED_DATA: IoCtlCommand = 0x000B_001C; // Method Buffered (7)
     }
     pub mod operations {
-        #[cfg(feature = "test-runtime")]
-        use crate::rt::test_rt::*;
-
         use core::ptr;
-        use wdk_sys::{
+        use crate::rt::wdk_sys::{
             _WDF_MEMORY_DESCRIPTOR__bindgen_ty_1,
             _WDF_MEMORY_DESCRIPTOR__bindgen_ty_1__bindgen_ty_1,
             WDF_MEMORY_DESCRIPTOR, _WDF_MEMORY_DESCRIPTOR_TYPE,
@@ -89,13 +86,10 @@ mod private {
     pub struct IoCtlRequest<T>(IoCtlCommand, T);
 
     mod _ioctl_resp_impls {
-        #[cfg(feature = "test-runtime")]
-        use crate::rt::test_rt::*;
-
         use crate::ioctl::private::{operations, IoCtlResponse};
         use crate::op::{AsBuff, AsBuilder, AsBuilderMut};
         use core::ops::Deref;
-        use wdk_sys::WDF_MEMORY_DESCRIPTOR;
+        use crate::rt::wdk_sys::WDF_MEMORY_DESCRIPTOR;
 
         impl<T: Default> IoCtlResponse<T> {
             #[allow(dead_code)]
@@ -150,13 +144,10 @@ mod private {
         }
     }
     mod _ioctl_req_impls {
-        #[cfg(feature = "test-runtime")]
-        use crate::rt::test_rt::*;
-
         use crate::ioctl::private::commands::IoCtlCommand;
         use crate::ioctl::private::{operations, IoCtlRequest};
         use crate::op::{AsBuilder, AsOptionalBuff};
-        use wdk_sys::WDF_MEMORY_DESCRIPTOR;
+        use crate::rt::wdk_sys::WDF_MEMORY_DESCRIPTOR;
 
         #[allow(dead_code)]
         impl<T> IoCtlRequest<Option<T>> {

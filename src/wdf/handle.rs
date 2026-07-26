@@ -1,8 +1,5 @@
 mod private {
-    use wdk_sys::HANDLE;
-
-    #[cfg(feature = "test-runtime")]
-    use crate::rt::test_rt::*;
+    use crate::rt::wdk_sys::HANDLE;
 
     /// Encapsulates a kernel object or resource [`HANDLE`] of type `H`.
     ///
@@ -150,18 +147,17 @@ mod private {
             mod _wdfobject {
                 use core::ptr;
 
-                use wdk_sys::{WDF_NO_HANDLE, WDFOBJECT};
-
                 use crate::Handle;
                 use crate::bd::WdfObjAttrs;
                 use crate::op::{
                     AsBuilder, AsCtxDescriptor, AsWdfOwner,
                     NtResult,
                 };
+                #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
-                #[cfg(feature = "test-runtime")]
-                use crate::rt::test_rt::*;
-                use crate::wdf::handle::private::_impls::_kmdf;
+                use crate::rt::wdk_sys::{
+                    WDF_NO_HANDLE, WDFOBJECT,
+                };
 
                 impl AsWdfOwner<WDFOBJECT> for Handle<WDFOBJECT> {
                     type Conf = ();
@@ -198,20 +194,18 @@ mod private {
             mod _wdfdevice {
                 use core::ptr;
 
-                use wdk_sys::{
-                    PWDFDEVICE_INIT, WDF_NO_HANDLE,
-                    WDFDEVICE,
-                };
-
                 use crate::Handle;
                 use crate::bd::WdfObjAttrs;
                 use crate::op::{
                     AsBuilder, AsCtxDescriptor, AsWdfOwner,
                     NtResult,
                 };
+                #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
-                #[cfg(feature = "test-runtime")]
-                use crate::rt::test_rt::*;
+                use crate::rt::wdk_sys::{
+                    PWDFDEVICE_INIT, WDF_NO_HANDLE,
+                    WDFDEVICE,
+                };
 
                 impl AsWdfOwner<WDFDEVICE> for Handle<WDFDEVICE> {
                     type Conf = ();
@@ -320,11 +314,6 @@ mod private {
             mod _wdfdriver {
                 use core::ptr;
 
-                use wdk_sys::{
-                    PDRIVER_OBJECT, WDF_NO_HANDLE,
-                    WDFDRIVER,
-                };
-
                 use crate::Handle;
                 use crate::bd::{
                     WdfDriverConf, WdfObjAttrs,
@@ -333,9 +322,12 @@ mod private {
                     AsBuilder, AsCtxDescriptor, AsWdfOwner,
                     NtResult,
                 };
+                #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
-                #[cfg(feature = "test-runtime")]
-                use crate::rt::test_rt::*;
+                use crate::rt::wdk_sys::{
+                    PDRIVER_OBJECT, WDF_NO_HANDLE,
+                    WDFDRIVER,
+                };
 
                 impl AsWdfOwner<WDFDRIVER> for Handle<WDFDRIVER> {
                     type Conf = WdfDriverConf;
@@ -388,14 +380,6 @@ mod private {
                 #[cfg(feature = "kmdf-runtime")]
                 use core::ptr;
 
-                #[cfg(feature = "kmdf-runtime")]
-                use wdk_sys::STATUS_UNSUCCESSFUL;
-                #[cfg(feature = "kmdf-runtime")]
-                use wdk_sys::call_unsafe_wdf_function_binding;
-                use wdk_sys::{
-                    ULONG_PTR, WDFDEVICE, WDFIOTARGET,
-                };
-
                 use crate::Handle;
                 use crate::ioctl::{
                     IoCtlRequest, IoCtlResponse,
@@ -405,12 +389,16 @@ mod private {
                     NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
-                use crate::op::{
-                    AsOptionalBuff, AsRaw, AsRawWithBorrow,
-                };
+                use crate::op::{AsOptionalBuff, AsRaw};
+                #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
-                #[cfg(feature = "test-runtime")]
-                use crate::rt::test_rt::*;
+                #[cfg(feature = "kmdf-runtime")]
+                use crate::rt::wdk_sys::STATUS_UNSUCCESSFUL;
+                use crate::rt::wdk_sys::{
+                    ULONG_PTR, WDFDEVICE, WDFIOTARGET,
+                };
+
+                #[cfg(feature = "kmdf-runtime")]
                 use crate::runtime::kmdf::{
                     wdf_get_targetio_state,
                     wdf_request_send_async,
@@ -455,7 +443,7 @@ mod private {
                         }
                         #[cfg(feature = "test-runtime")]
                         {
-                            compile_error!(
+                            unimplemented!(
                                 "Cannot create WDFIOTARGET handle in test-runtime"
                             )
                         }
@@ -650,7 +638,7 @@ mod private {
 
                         Ok(response)
                     }
-                    
+
                     pub fn send_wdf_sync() {}
                 }
             }

@@ -34,14 +34,13 @@ fn read_status_returns_started() {
 }
 
 #[test]
-fn can_create_iotarget_from_device() {
+#[should_panic(expected = "Cannot create WDFIOTARGET")]
+fn cannot_create_iotarget_from_device() {
     let device: WDFDEVICE =
         core::ptr::dangling_mut();
 
-    let result =
+    let _ =
         Handle::<WDFIOTARGET>::from_owner(&device);
-
-    assert!(result.is_ok());
 }
 
 #[test]

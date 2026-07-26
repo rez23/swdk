@@ -2,7 +2,7 @@ use swdk::ioctl::{
     IoCtlRequest,
     IoCtlResponse,
 };
-use swdk::op::AsBuilder;
+use swdk::op::{AsBuilder, AsBuilderMut};
 
 #[test]
 fn request_keeps_command() {
@@ -33,4 +33,73 @@ fn response_into_inner_returns_inner() {
         IoCtlResponse::<u32>::new(77);
 
     assert_eq!(response.into_inner(), 77);
+}
+
+#[test]
+fn request_build_keeps_payload_alive() {
+    let req = IoCtlRequest::new(0x1234, 42u32);
+
+    let _ = req.build();
+
+    assert_eq!(
+        req.as_ref(),
+        &Some(42)
+    );
+}
+
+#[test]
+fn response_build_does_not_modify_value() {
+    let response = IoCtlResponse::new(77u32);
+
+    let _ = response.build();
+
+    assert_eq!(*response, 77);
+}
+
+#[test]
+fn response_build_mut_does_not_modify_value() {
+    let mut response = IoCtlResponse::new(77u32);
+
+    let _ = response.build_mut();
+
+    assert_eq!(*response, 77);
+}
+
+#[test]
+fn response_build_and_build_mut_report_same_size() {
+    let mut response =
+        IoCtlResponse::<u32>::default();
+
+    let read_desc = response.build();
+    let write_desc = response.build_mut();
+
+    assert_eq!(
+        unsafe { read_desc.u.BufferType.Length },
+        unsafe { write_desc.u.BufferType.Length }
+    );
+}
+
+#[test]
+fn request_with_payload_builds_non_empty_descriptor() {
+    let req = IoCtlRequest::new(0x1234, 42u32);
+
+    let desc = req.build().unwrap();
+
+    assert_ne!(
+        unsafe { desc.u.BufferType.Length },
+        0
+    );
+}
+
+#[test]
+fn response_build_produces_non_empty_descriptor() {
+    let response =
+        IoCtlResponse::<u32>::default();
+
+    let desc = response.build();
+
+    assert_ne!(
+        unsafe { desc.u.BufferType.Length },
+        0
+    );
 }
