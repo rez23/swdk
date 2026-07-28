@@ -8,6 +8,7 @@ mod _operators {
     use alloc::string::String;
     use alloc::vec::Vec;
     use core::borrow::Borrow;
+    use core::ops::Deref;
     use core::ptr;
 
     use crate::rt::wdk_sys::PCWDF_OBJECT_CONTEXT_TYPE_INFO;
@@ -1434,6 +1435,12 @@ mod _operators {
         fn fmt_status(self) -> &'static str;
 
         fn fmt_hex(self) -> String;
+    }
+
+    pub trait IntoRaw<O: Copy>: Deref<Target=O>+Sized {
+        fn into_raw(self) -> O {
+            *self.deref()
+        }
     }
 }
 
