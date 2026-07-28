@@ -227,7 +227,7 @@ mod private {
                         _: Self::Conf,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
-                    where
+                        where
                         D: AsCtxDescriptor,
                     {
                         let mut device: WDFDEVICE =
@@ -636,16 +636,16 @@ mod private {
                         IoCtlResponse<R>,
                         WdfIoTargetError,
                     > {
-                        // if device is not started, return error
-                        let device_status =
-                            self.read_status();
-                        let WdfIoTargetState::Started =
-                            device_status
-                        else {
-                            return Err(IllegalState(
-                                device_status,
-                            ));
-                        };
+                            // if device is not started, return error
+                            let device_status =
+                                self.read_status();
+                            let WdfIoTargetState::Started =
+                                device_status
+                            else {
+                                return Err(IllegalState(
+                                    device_status,
+                                ));
+                            };
 
                         // build input ioctl output buffer only if request has data to send
                         let request_desc = request.build();
