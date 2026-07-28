@@ -384,7 +384,7 @@ mod __runtime {
     pub mod kmdf {
         use core::ffi::c_void;
 
-        use wdk_sys::{PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, call_unsafe_wdf_function_binding};
+        use wdk_sys::{call_unsafe_wdf_function_binding, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES};
         use crate::call_ntstatus_wdf_unsafe_binding;
         use crate::ioctl::commands::IoCtlCommand;
         use crate::op::NtResult;
@@ -421,22 +421,22 @@ mod __runtime {
         }
 
         #[inline]
-        pub unsafe fn wdf_get_target_io(
-            p_device: WDFDEVICE,
+        pub unsafe fn wdf_target_io_get(
+            device: WDFDEVICE,
         ) -> WDFIOTARGET {
             call_unsafe_wdf_function_binding!(
                 WdfDeviceGetIoTarget,
-                p_device,
+                device,
             )
         }
 
         #[inline]
-        pub unsafe fn wdf_get_targetio_state(
-            p_device: WDFIOTARGET,
+        pub unsafe fn wdf_target_io_get_state(
+            io_target: WDFIOTARGET,
         ) -> WDF_IO_TARGET_STATE {
             call_unsafe_wdf_function_binding!(
                 WdfIoTargetGetState,
-                p_device,
+                io_target,
             )
         }
 
@@ -486,9 +486,35 @@ mod __runtime {
                 p_type_info,
             )
         }
+
+        #[inline]
+        pub unsafe fn wdf_target_io_create(
+            device: WDFDEVICE,
+            attrs: PWDF_OBJECT_ATTRIBUTES,
+            io_target: *mut WDFIOTARGET,
+        ) -> NtResult {
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfIoTargetCreate,
+                device,
+                attrs,
+                io_target,
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_target_io_open(
+            io_target: WDFIOTARGET,
+            open_params: PWDF_IO_TARGET_OPEN_PARAMS,
+        ) -> NtResult {
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfIoTargetOpen,
+                io_target,
+                open_params,
+            )
+        }
+
     }
 }
-
 pub mod utils;
 
 #[cfg(feature = "wdk-default")]
