@@ -108,11 +108,10 @@ mod private {
     pub type HandleMut<'a, T = HANDLE> = Handle<&'a mut T>;
 
     mod _impls {
+        use crate::op::{AsPtr, AsRaw, AsRawWithBorrow, IntoInner, IntoRaw};
+        use crate::{Handle, HandleRef};
         use core::borrow::Borrow;
         use core::ops::Deref;
-
-        use crate::op::{AsPtr, AsRaw, AsRawWithBorrow};
-        use crate::{Handle, HandleRef};
 
         impl<H> Handle<H> {
             pub fn new(raw: H) -> Self {
