@@ -1138,7 +1138,9 @@ mod _operators {
         fn new_from_owner(
             owner: &Self::Owner,
             attrs: Option<WdfObjAttrs>
-        ) -> NtResult<Self>;
+        ) -> NtResult<Self> {
+            Self::from_owner(owner)
+        }
     }
 
     /// A trait for types that wrap another value and allow retrieval of the inner value by consuming the wrapper.
