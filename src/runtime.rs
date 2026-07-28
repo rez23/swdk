@@ -382,9 +382,6 @@ mod __runtime {
                   It is only for internal crate use."
     )]
     pub mod kmdf {
-        use core::ffi::c_void;
-
-        use wdk_sys::{call_unsafe_wdf_function_binding, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES};
         use crate::call_ntstatus_wdf_unsafe_binding;
         use crate::ioctl::commands::IoCtlCommand;
         use crate::op::NtResult;
