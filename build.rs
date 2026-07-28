@@ -114,11 +114,6 @@ fn main() -> Result<(), wdk_build::ConfigError> {
                     wdk_build::ConfigError::WdkContentRootDetectionError,
                 )?;
 
-            println!(
-                "cargo:warning=Using {}",
-                ntstatus.display()
-            );
-
             let statuses =
                 collect_ntstatus_values_from_wdf_header(&ntstatus)
                     .map_err(|_| {
@@ -126,8 +121,9 @@ fn main() -> Result<(), wdk_build::ConfigError> {
                     })?;
 
             println!(
-                "cargo:warning=Collected {} NTSTATUS values",
-                statuses.len()
+                "cargo:warning=Collected {} NTSTATUS values from {}",
+                statuses.len(),
+                ntstatus.display()
             );
 
             let generated =
