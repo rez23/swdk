@@ -223,7 +223,7 @@ mod private {
                     type Owned = PWDFDEVICE_INIT;
 
                     fn from_owned_with_attrs<D>(
-                        owner: Self::Owned,
+                        owned: Self::Owned,
                         _: Self::Conf,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
@@ -235,7 +235,7 @@ mod private {
                         let mut attrs =
                             attrs.map(|a| a.build());
 
-                        let mut pdev_init = owner;
+                        let mut pdev_init = owned;
 
                         let attrs_ptr =
                             attrs.as_mut().map_or(
