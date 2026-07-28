@@ -1,5 +1,5 @@
 use core::ptr;
-
+use wdk_sys::{ACCESS_MASK, PDEVICE_OBJECT, PFILE_OBJECT, PFN_WDF_IO_TARGET_QUERY_REMOVE, PFN_WDF_IO_TARGET_REMOVE_CANCELED, PFN_WDF_IO_TARGET_REMOVE_COMPLETE, PLONGLONG, PVOID, UNICODE_STRING, WDFIOTARGET, WDF_IO_TARGET_OPEN_TYPE};
 use crate::ctx::WdfCtxNoneDesc;
 use crate::op::{AsBuilder, AsCtxDescriptor, AsRaw};
 use crate::rt::wdk_sys::{
@@ -11,7 +11,7 @@ use crate::rt::wdk_sys::{
     WDF_OBJECT_ATTRIBUTES, WDF_SYNCHRONIZATION_SCOPE,
     WDFOBJECT,
 };
-use crate::vals::{WdfExecutionLevel, WdfSyncScope};
+use crate::vals::{WdfExecutionLevel, WdfIoTargetOpenType, WdfSyncScope};
 use crate::{Handle, const_size_to_ulong};
 
 pub struct WdfObjAttrs<D: AsCtxDescriptor = WdfCtxNoneDesc>
@@ -141,4 +141,30 @@ impl AsBuilder for WdfDriverConf {
             DriverPoolTag: self.setup.pool_tag,
         }
     }
+}
+
+
+pub struct WdfIoTargetOpenParams {
+    open_type: WdfIoTargetOpenType,
+    on_query_remove: PFN_WDF_IO_TARGET_QUERY_REMOVE,
+    on_remove_canceled: PFN_WDF_IO_TARGET_REMOVE_CANCELED,
+    on_remove_complete: PFN_WDF_IO_TARGET_REMOVE_COMPLETE,
+
+    #[cfg(feature = "kmdf-runtime")]
+    target_device_obj: Option<PDEVICE_OBJECT>,
+
+    #[cfg(feature = "kmdf-runtime")]
+    p_file_object: PFILE_OBJECT,
+
+    target_device_name: Option<UNICODE_STRING>,
+    desired_access: Option<ACCESS_MASK>,
+    share_access: Option<ULONG>,
+    file_attrs: Option<ULONG>,
+    create_disposition: Option<ULONG>,
+    create_options: Option<ULONG>,
+    ea_buffer: Option<PVOID>,
+    ea_buffer_length: Option<ULONG>,
+    allocation_size: Option<PLONGLONG>,
+    file_info: Option<ULONG>,
+    file_name: Option<UNICODE_STRING>,
 }
