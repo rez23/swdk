@@ -72,8 +72,8 @@ Although minimal, this example creates both the KMDF driver object and a device 
 - automatic descriptor initialization
 - `NTSTATUS`-oriented error handling
 
-
-
+For a more complete example check the [gamepad-info](https://github.com/rez23/gamepad-info) official driver example crate
+for *swdk*
 # Getting started
 
 swdk is built on Microsoft's **windows-drivers-rs** ecosystem.
