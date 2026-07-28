@@ -137,6 +137,7 @@ mod private {
         impl<H> AsPtr<H> for Handle<H> {}
         unsafe impl<H> Send for Handle<H> {}
         unsafe impl<H> Sync for Handle<H> {}
+        impl<H: Copy> IntoRaw<H> for Handle<H> {}
         impl<H: Copy> AsRaw<H> for Handle<H> {}
 
         impl<'a, H> Borrow<H> for HandleRef<'a, H> {
