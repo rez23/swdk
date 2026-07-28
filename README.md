@@ -11,6 +11,7 @@ rules that describe how the Rust compiler should handle WDF operations, data typ
 
 In this sense, swdk does not aim to cover every WDF feature. Instead, it provides a Rust-to-WDF meta-binding that, 
 as a result, permits you to write Windows drivers as a set of rules applied directly to the raw data types exposed by WDF.
+
 ---
 # A brief example
 
@@ -70,6 +71,7 @@ Although minimal, this example creates both the KMDF driver object and a device 
 - driver configuration through data structures
 - automatic descriptor initialization
 - `NTSTATUS`-oriented error handling
+
 ---
 
 # Getting started
@@ -136,6 +138,7 @@ SWDK was designed trying to follow the next principals:
 
 Probably the primary objective of *swdk* is
 > If you are already familiar with the Windows Driver Framework, swdk should feel familiar too.
+
 ---
 
 # Philosophy
