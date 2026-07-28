@@ -11,6 +11,8 @@ mod __runtime {
 
         pub mod wdk_sys {
             use core::ffi::c_void;
+            use wdk_sys::_WDF_IO_TARGET_STATE::Type;
+
             #[macro_export]
             macro_rules! call_unsafe_wdf_function_binding {
                 ($func:ident $(, $args:expr)* $(,)?) => {{}};
@@ -334,6 +336,42 @@ mod __runtime {
                     WDF_IO_TARGET_STATE = 5;
                 pub const WdfIoTargetPurged:
                     WDF_IO_TARGET_STATE = 6;
+            }
+
+            pub mod _WDF_IO_TARGET_STATE {
+                pub type Type = ::core::ffi::c_int;
+                pub const WdfIoTargetStateUndefined: Type = 0;
+                pub const WdfIoTargetStarted: Type = 1;
+                pub const WdfIoTargetStopped: Type = 2;
+                pub const WdfIoTargetClosedForQueryRemove: Type = 3;
+                pub const WdfIoTargetClosed: Type = 4;
+                pub const WdfIoTargetDeleted: Type = 5;
+                pub const WdfIoTargetPurged: Type = 6;
+            }
+            pub use self::_WDF_IO_TARGET_STATE::Type as WDF_IO_TARGET_STATE;
+            pub type PWDF_IO_TARGET_STATE = *mut wdk_sys::_WDF_IO_TARGET_STATE::Type;
+            pub mod _WDF_IO_TARGET_OPEN_TYPE {
+                pub type Type = ::core::ffi::c_int;
+                pub const WdfIoTargetOpenUndefined: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 0;
+                pub const WdfIoTargetOpenUseExistingDevice: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 1;
+                pub const WdfIoTargetOpenByName: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 2;
+                pub const WdfIoTargetOpenReopen: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 3;
+                pub const WdfIoTargetOpenLocalTargetByFile: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 4;
+            }
+            pub use self::_WDF_IO_TARGET_OPEN_TYPE::Type as WDF_IO_TARGET_OPEN_TYPE;
+            pub mod _WDF_IO_TARGET_SENT_IO_ACTION {
+                pub type Type = ::core::ffi::c_int;
+                pub const WdfIoTargetSentIoUndefined: wdk_sys::_WDF_IO_TARGET_SENT_IO_ACTION::Type = 0;
+                pub const WdfIoTargetCancelSentIo: wdk_sys::_WDF_IO_TARGET_SENT_IO_ACTION::Type = 1;
+                pub const WdfIoTargetWaitForSentIoToComplete: wdk_sys::_WDF_IO_TARGET_SENT_IO_ACTION::Type = 2;
+                pub const WdfIoTargetLeaveSentIoPending: wdk_sys::_WDF_IO_TARGET_SENT_IO_ACTION::Type = 3;
+            }
+            pub use self::_WDF_IO_TARGET_SENT_IO_ACTION::Type as WDF_IO_TARGET_SENT_IO_ACTION;
+            pub mod _WDF_IO_TARGET_PURGE_IO_ACTION {
+                pub type Type = ::core::ffi::c_int;
+                pub const WdfIoTargetPurgeIoUndefined: wdk_sys::_WDF_IO_TARGET_PURGE_IO_ACTION::Type = 0;
+                pub const WdfIoTargetPurgeIoAndWait: wdk_sys::_WDF_IO_TARGET_PURGE_IO_ACTION::Type = 1;
+                pub const WdfIoTargetPurgeIo: wdk_sys::_WDF_IO_TARGET_PURGE_IO_ACTION::Type = 2;
             }
         }
     }
