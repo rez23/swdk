@@ -310,6 +310,39 @@ mod private {
                     }
                 }
             }
+            mod _pdevice_init {
+                use core::ptr;
+                use crate::rt::__cb;
+                use crate::HandleRef;
+                use wdk_sys::PWDFDEVICE_INIT;
+                use crate::bd::WdfDevicePnpPowerSetup;
+                use crate::op::{AsBuilder, IntoRaw};
+
+                impl<'a> HandleRef<'a, PWDFDEVICE_INIT> {
+                    #[inline]
+                    pub fn with_filter(self) -> Self {
+                        unsafe {
+                            __cb::wdf_f_do_init_set_filter(
+                                self.0
+                            )
+                        };
+                        self
+                    }
+
+                    #[inline]
+                    pub fn with_pnp_setup(self, setup: WdfDevicePnpPowerSetup) -> Self {
+                        let pnp_setup = setup.build();
+                        unsafe {
+                            __cb::wdf_device_init_set_pnp_power_event_callbacks(
+                                self.raw(),
+                                ptr::from_ref(&pnp_setup).cast_mut(),
+                            )
+                        };
+                        self
+                    }
+                }
+            }
+
             mod _wdfdriver {
                 use core::ptr;
 
