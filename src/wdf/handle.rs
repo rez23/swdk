@@ -147,6 +147,12 @@ mod private {
         }
         impl<'a, H: Copy> AsRawWithBorrow<H> for HandleRef<'a, H> {}
 
+        impl<'a, H: Copy> HandleRef<'a, H> {
+            pub fn raw(&self) -> H {
+                *self.0
+            }
+        }
+
         #[cfg(feature = "minimal-runtime")]
         mod _kmdf {
             mod _wdfobject {
