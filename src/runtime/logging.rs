@@ -117,6 +117,7 @@ mod private {
     }
 
     #[must_use]
+    #[deprecated]
     #[inline]
     pub fn ntstatus_name(status: NTSTATUS) -> &'static str {
         match status {
