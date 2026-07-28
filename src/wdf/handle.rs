@@ -118,6 +118,11 @@ mod private {
                 Self(raw)
             }
         }
+        impl<H> IntoInner<H> for Handle<H> {
+            fn into_inner(self) -> H {
+                self.0
+            }
+        }
         impl<H> Deref for Handle<H> {
             type Target = H;
             fn deref(&self) -> &Self::Target {
