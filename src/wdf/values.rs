@@ -1,10 +1,10 @@
 mod _values {
-    use alloc::vec::Vec;
-
     use crate::ioctl::commands::IoCtlCommand;
     use crate::rt::wdk_sys::{
         NTSTATUS, WDF_IO_TARGET_STATE,
     };
+    use alloc::vec::Vec;
+    use core::ffi::c_int;
 
     #[derive(Debug)]
     pub struct IoCtlTargetSendInfo {
@@ -91,5 +91,4 @@ mod _values {
         }
     }
 }
-
 pub use _values::*;
