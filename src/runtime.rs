@@ -388,6 +388,8 @@ mod __runtime {
         use crate::call_ntstatus_wdf_unsafe_binding;
         use crate::ioctl::commands::IoCtlCommand;
         use crate::op::NtResult;
+        use core::ffi::c_void;
+        use wdk_sys::{PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_PNPPOWER_EVENT_CALLBACKS, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, call_unsafe_wdf_function_binding};
 
         #[inline]
         pub unsafe fn wdf_driver_create(
@@ -511,6 +513,28 @@ mod __runtime {
                 io_target,
                 open_params,
             )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_f_do_init_set_filter(
+            device_init: &PWDFDEVICE_INIT,
+        ) {
+            call_unsafe_wdf_function_binding!(
+                WdfFdoInitSetFilter,
+                *device_init,
+            );
+        }
+
+        #[inline]
+        pub unsafe fn wdf_device_init_set_pnp_power_event_callbacks(
+            device_init: PWDFDEVICE_INIT,
+            callbacks: PWDF_PNPPOWER_EVENT_CALLBACKS,
+        ) {
+            call_unsafe_wdf_function_binding!(
+                WdfDeviceInitSetPnpPowerEventCallbacks,
+                device_init,
+                callbacks,
+            );
         }
 
     }
