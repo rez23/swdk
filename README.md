@@ -1,6 +1,5 @@
 # Rust Safe Windows Driver Kit
-> ###### This is a highly experimental project in a very early stage of development.  
-
+> ###### This is a highly experimental project in a very early stage of development.
 > ###### Contributions are welcome, but if you submit PR may be some time for the approval
 
 **swdk** is middleware for the Windows Driver Framework (WDF). It is designed to provide a safe, idiomatic, and expressive 
