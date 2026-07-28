@@ -14,6 +14,7 @@ mod _values {
         pub byte_returned: usize,
     }
     #[derive(Clone)]
+    #[repr(i32)]
     pub enum WdfSyncScope {
         Invalid = 0,
         Inherit = 1,
@@ -22,6 +23,7 @@ mod _values {
         None = 4,
     }
     #[derive(Clone)]
+    #[repr(i32)]
     pub enum WdfExecutionLevel {
         Invalid = 0,
         Inherit = 1,
@@ -91,4 +93,5 @@ mod _values {
         }
     }
 }
+
 pub use _values::*;
