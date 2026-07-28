@@ -2,7 +2,7 @@
 > ###### This is a highly experimental project in a very early stage of development.
 > ###### Contributions are welcome, but if you submit PR may be some time for the approval
 
-**swdk** is middleware for the Windows Driver Framework (WDF). It is designed to provide a safe, idiomatic, and expressive 
+**swdk** is middleware for the Windows Driver Framework (WDF) designed to provide a safe, idiomatic, and expressive 
 way to write Windows kernel drivers in Rust, with a current focus on KMDF.
 
 **swdk** is not a wrapper around a specific WDF runtime or some sorta of utility crate for WDF.  
