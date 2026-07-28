@@ -150,7 +150,6 @@ pub struct WdfObjAttrs<D: AsCtxDescriptor = WdfCtxNoneDesc>
     pub parent_obj: Option<Handle<WDFOBJECT>>,
     _descriptor: D,
 }
-
 impl<D: AsCtxDescriptor> AsBuilder for WdfObjAttrs<D> {
     type Descriptor<'b>
         = WDF_OBJECT_ATTRIBUTES
@@ -182,7 +181,6 @@ impl<D: AsCtxDescriptor> AsBuilder for WdfObjAttrs<D> {
         }
     }
 }
-
 impl<D: AsCtxDescriptor> Default for WdfObjAttrs<D> {
     fn default() -> Self {
         Self {
@@ -195,7 +193,6 @@ impl<D: AsCtxDescriptor> Default for WdfObjAttrs<D> {
         }
     }
 }
-
 impl<D: AsCtxDescriptor> WdfObjAttrs<D> {
     #[must_use]
     pub fn with_sync_scope(
