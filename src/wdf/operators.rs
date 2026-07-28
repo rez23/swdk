@@ -4,6 +4,8 @@ mod _concepts {
     pub type NtResult<T = ()> = Result<T, NTSTATUS>;
 }
 mod _operators {
+    use alloc::format;
+    use alloc::string::String;
     use alloc::vec::Vec;
     use core::borrow::Borrow;
     use core::ptr;
@@ -1400,6 +1402,12 @@ mod _operators {
         unsafe fn unique(
             &self,
         ) -> PCWDF_OBJECT_CONTEXT_TYPE_INFO;
+    }
+
+    pub trait AsNtStatus: Sized {
+        fn fmt_status(self) -> &'static str;
+
+        fn fmt_hex(self) -> String;
     }
 }
 
