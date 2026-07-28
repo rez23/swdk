@@ -12,7 +12,7 @@ rules that describe how the Rust compiler should handle WDF operations, data typ
 In this sense, swdk does not aim to cover every WDF feature. Instead, it provides a Rust-to-WDF meta-binding that, 
 as a result, permits you to write Windows drivers as a set of rules applied directly to the raw data types exposed by WDF.
 
----
+
 # A brief example
 
 
@@ -72,7 +72,7 @@ Although minimal, this example creates both the KMDF driver object and a device 
 - automatic descriptor initialization
 - `NTSTATUS`-oriented error handling
 
----
+
 
 # Getting started
 
@@ -121,7 +121,7 @@ After installing the `cargo-wdk` command-line tool, build the driver with:
 cargo wdk build
 ```
 
----
+
 
 # Goals
 
@@ -139,7 +139,7 @@ SWDK was designed trying to follow the next principals:
 Probably the primary objective of *swdk* is
 > If you are already familiar with the Windows Driver Framework, swdk should feel familiar too.
 
----
+
 
 # Philosophy
 
@@ -156,7 +156,7 @@ Handle<T>
 
 `Handle<T>` packages a WDF kernel object or resource in a Rust type that can expose the corresponding raw WDF value when required.
 
----
+
 
 ### Data-oriented
 
@@ -210,7 +210,7 @@ fn on_device_d0_entry(...) {
 
 The result remains recognizably KMDF, while shifting the focus from imperative descriptor manipulation to declarative composition.
 
----
+
 
 ### Zero-cost
 
