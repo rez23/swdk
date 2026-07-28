@@ -40,4 +40,8 @@ mod private {
     }
 }
 
+mod __ntstatus {
+    include!(concat!(env!("OUT_DIR"), "/ntstatus.rs"));
+}
+
 pub use private::*;
