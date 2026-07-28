@@ -1,3 +1,12 @@
+//! # TODO
+//! Auto-generate buildable WDF wrappers from bindgen metadata.
+//! Hand-writing WDF_PNPPOWER_EVENT_CALLBACKS-like structs
+//! does not scale.
+//! # Notes
+//! This is a provvisorial solution for having idiomatic struct pretty formatted without the need of specifying size
+//!  Anyway, this is not the best solution. Think to port the huge amount of Buildable struct in WDF is an impossible task.
+//! The solution is something like NTSTATUS.fmt_status(), a build script generator that auto creates the builders from the C original struct,
+//! So less late or earlier I will implement something like that... but, for now, this is a little version needed for getting work the first examples
 use core::ptr;
 
 use wdk_sys::{
