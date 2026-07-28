@@ -24,7 +24,7 @@ mod private {
     /// `Handle` is the basic building block of `swdk`.
     /// You can use it to implement your own functions for raw WDF kernel types.
     /// For example, the `swdk` library implements [`Handle::read_status()`] for [`WDFIOTARGET`]
-    /// in exactly this way:
+    /// exactly in this way:
     /// ```rust
     /// impl swdk::Handle<swdk::rt::wdk_sys::WDFIOTARGET> {
     ///     pub fn read_status(&self) -> swdk::val::WdfIoTargetState {
@@ -32,7 +32,7 @@ mod private {
     ///             ...
     /// ```
     ///
-    /// `swdk` is already quite complete, and you can declare a full Rust driver
+    /// `swdk` is still in development, anyway, you can already declare a full Rust driver
     /// in just a few lines using `Handle`:
     /// ```rust
     /// use swdk::rt::wdk_sys::{WDFDEVICE, WDFDRIVER, PWDFDEVICE_INIT, STATUS_SUCCESS};
