@@ -155,8 +155,8 @@ mod private {
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
-                use crate::rt::wdk_sys::{
-                    WDF_NO_HANDLE, WDFOBJECT,
+                use crate::rt::wdk_sys::{WDFOBJECT,
+                                         WDF_NO_HANDLE,
                 };
 
                 impl AsWdfOwner<WDFOBJECT> for Handle<WDFOBJECT> {
@@ -203,8 +203,8 @@ mod private {
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
-                    PWDFDEVICE_INIT, WDF_NO_HANDLE,
-                    WDFDEVICE,
+                    PWDFDEVICE_INIT,
+                    WDFDEVICE, WDF_NO_HANDLE,
                 };
 
                 impl AsWdfOwner<WDFDEVICE> for Handle<WDFDEVICE> {
@@ -325,8 +325,8 @@ mod private {
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
-                    PDRIVER_OBJECT, WDF_NO_HANDLE,
-                    WDFDRIVER,
+                    PDRIVER_OBJECT,
+                    WDFDRIVER, WDF_NO_HANDLE,
                 };
 
                 impl AsWdfOwner<WDFDRIVER> for Handle<WDFDRIVER> {
@@ -377,16 +377,13 @@ mod private {
                 }
             }
             mod _wio_target {
-                #[cfg(feature = "kmdf-runtime")]
-                use core::ptr;
-
                 use crate::Handle;
+                use crate::bd::WdfObjAttrs;
                 use crate::ioctl::{
                     IoCtlRequest, IoCtlResponse,
                 };
                 use crate::op::{
-                    AsBuilder, AsBuilderMut, AsWdfOwned,
-                    NtResult,
+                    AsBuilder, AsBuilderMut, AsWdfOwned, NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::op::{AsOptionalBuff, AsRaw};
@@ -397,11 +394,10 @@ mod private {
                 use crate::rt::wdk_sys::{
                     ULONG_PTR, WDFDEVICE, WDFIOTARGET,
                 };
-
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::runtime::kmdf::{
-                    wdf_get_targetio_state,
                     wdf_request_send_async,
+                    wdf_target_io_get_state,
                 };
                 use crate::runtime::utils::from_option_to_ptr;
                 use crate::vals::WdfIoTargetError::IllegalState;
@@ -411,13 +407,14 @@ mod private {
                     IoCtlTargetSendInfo, WdfIoTargetError,
                     WdfIoTargetState,
                 };
+                #[cfg(feature = "kmdf-runtime")]
+                use core::ptr;
+                use wdk_sys::{PWDF_IO_TARGET_OPEN_PARAMS, WDF_NO_HANDLE};
 
                 impl AsWdfOwned<WDFIOTARGET> for Handle<WDFIOTARGET> {
                     type Owner = WDFDEVICE;
-                    #[cfg_attr(
-                        feature = "test-runtime",
-                        expect(
-                            unused_variables,
+                    #[cfg_attr(feature = "test-runtime",
+                        expect(unused_variables,
                             reason = "Unused because of test-runtime"
                         )
                     )]
@@ -429,7 +426,7 @@ mod private {
                         {
                             let device = owner;
                             let io_target = unsafe {
-                                __cb::wdf_get_target_io(
+                                __cb::wdf_target_io_get(
                                     *device,
                                 )
                             };
@@ -448,8 +445,38 @@ mod private {
                             )
                         }
                     }
-                }
 
+                    fn new_from_owner(
+                        owner: &Self::Owner,
+                        attrs: Option<WdfObjAttrs>
+                    ) -> NtResult<Self>
+                    {
+                        let mut io_target: WDFIOTARGET =
+                            WDF_NO_HANDLE.cast();
+                        let mut attrs =
+                            attrs.map(|a| a.build());
+
+                        let device_ptr = *owner;
+
+                        let attrs_ptr =
+                            attrs.as_mut().map_or(
+                                ptr::null_mut(),
+                                ptr::from_mut,
+                            );
+
+                        #[cfg(feature = "kmdf-runtime")]
+                        // SAFETY: `driver_init` is safe because is passed by WDF
+                        unsafe {
+                            __cb::wdf_target_io_create(
+                                device_ptr,
+                                attrs_ptr,
+                                &raw mut io_target,
+                            )
+                        }?;
+
+                        Ok(Self::new(io_target))
+                    }
+                }
                 impl Handle<WDFIOTARGET> {
                     /// Reads and returns the status of the I/O target.
                     ///
@@ -484,7 +511,7 @@ mod private {
                         #[cfg(feature = "kmdf-runtime")]
                         {
                             WdfIoTargetState::from(unsafe {
-                                wdf_get_targetio_state(
+                                wdf_target_io_get_state(
                                     self.raw(),
                                 )
                             })
@@ -639,7 +666,11 @@ mod private {
                         Ok(response)
                     }
 
-                    pub fn send_wdf_sync() {}
+                    pub fn open(
+                        params: PWDF_IO_TARGET_OPEN_PARAMS,
+                    ) {
+
+                    }
                 }
             }
         }
