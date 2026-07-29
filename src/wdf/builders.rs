@@ -9,30 +9,7 @@
 //! So less late or earlier I will implement something like that... but, for now, this is a little version needed for getting work the first examples
 use core::ptr;
 
-use wdk_sys::{
-    ACCESS_MASK, PDEVICE_OBJECT, PFILE_OBJECT,
-    PFN_WDF_DEVICE_D0_ENTRY,
-    PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED,
-    PFN_WDF_DEVICE_D0_EXIT,
-    PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED,
-    PFN_WDF_DEVICE_PREPARE_HARDWARE,
-    PFN_WDF_DEVICE_QUERY_REMOVE, PFN_WDF_DEVICE_QUERY_STOP,
-    PFN_WDF_DEVICE_RELATIONS_QUERY,
-    PFN_WDF_DEVICE_RELEASE_HARDWARE,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND,
-    PFN_WDF_DEVICE_SURPRISE_REMOVAL,
-    PFN_WDF_DEVICE_USAGE_NOTIFICATION,
-    PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX,
-    PFN_WDF_IO_TARGET_QUERY_REMOVE,
-    PFN_WDF_IO_TARGET_REMOVE_CANCELED,
-    PFN_WDF_IO_TARGET_REMOVE_COMPLETE, PLONGLONG, PVOID,
-    UNICODE_STRING, WDF_IO_TARGET_OPEN_TYPE,
-    WDF_PNPPOWER_EVENT_CALLBACKS, WDFIOTARGET,
-};
+use wdk_sys::{ACCESS_MASK, PDEVICE_OBJECT, PFILE_OBJECT, PFN_WDF_DEVICE_D0_ENTRY, PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED, PFN_WDF_DEVICE_D0_EXIT, PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED, PFN_WDF_DEVICE_PREPARE_HARDWARE, PFN_WDF_DEVICE_QUERY_REMOVE, PFN_WDF_DEVICE_QUERY_STOP, PFN_WDF_DEVICE_RELATIONS_QUERY, PFN_WDF_DEVICE_RELEASE_HARDWARE, PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP, PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH, PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT, PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART, PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND, PFN_WDF_DEVICE_SURPRISE_REMOVAL, PFN_WDF_DEVICE_USAGE_NOTIFICATION, PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX, PFN_WDF_IO_TARGET_QUERY_REMOVE, PFN_WDF_IO_TARGET_REMOVE_CANCELED, PFN_WDF_IO_TARGET_REMOVE_COMPLETE, PLONGLONG, PVOID, UNICODE_STRING, WDF_IO_TARGET_OPEN_TYPE, WDF_PNPPOWER_EVENT_CALLBACKS, WDFIOTARGET, WDF_IO_QUEUE_CONFIG, WDFDRIVER, WDF_IO_QUEUE_DISPATCH_TYPE, WDF_TRI_STATE, BOOLEAN, PFN_WDF_IO_QUEUE_IO_DEFAULT, PFN_WDF_IO_QUEUE_IO_READ, PFN_WDF_IO_QUEUE_IO_WRITE, PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL, PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL, PFN_WDF_IO_QUEUE_IO_STOP, PFN_WDF_IO_QUEUE_IO_RESUME, PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE, _WDF_IO_QUEUE_CONFIG__bindgen_ty_1};
 
 use crate::ctx::WdfCtxNoneDesc;
 use crate::op::{AsBuilder, AsCtxDescriptor, AsRaw};
@@ -132,6 +109,51 @@ pub struct WdfDevicePnpPowerSetup {
     pub on_device_relations_query:
         PFN_WDF_DEVICE_RELATIONS_QUERY,
 }
+
+#[derive(Default)]
+pub struct WdfIoQueueConfig {
+    pub dispatch_type: WDF_IO_QUEUE_DISPATCH_TYPE,
+    pub power_managed: WDF_TRI_STATE,
+    pub allow_zero_length_requests: BOOLEAN,
+    pub default_queue: BOOLEAN,
+    pub on_io_default: PFN_WDF_IO_QUEUE_IO_DEFAULT,
+    pub on_io_read: PFN_WDF_IO_QUEUE_IO_READ,
+    pub on_io_write: PFN_WDF_IO_QUEUE_IO_WRITE,
+    pub on_io_device_control: PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL,
+    pub on_io_internal_device_control: PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL,
+    pub on_io_stop: PFN_WDF_IO_QUEUE_IO_STOP,
+    pub on_io_resume: PFN_WDF_IO_QUEUE_IO_RESUME,
+    pub on_io_canceled_on_queue: PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE,
+    pub settings: _WDF_IO_QUEUE_CONFIG__bindgen_ty_1,
+    pub driver: WDFDRIVER,
+}
+
+impl AsBuilder for WdfIoQueueConfig {
+    type Descriptor<'a> = WDF_IO_QUEUE_CONFIG
+        where
+            Self: 'a;
+
+    fn build(&self) -> Self::Descriptor<'_> {
+        WDF_IO_QUEUE_CONFIG {
+            Size: const_size_to_ulong!(WDF_IO_QUEUE_CONFIG),
+            DispatchType: 0,
+            PowerManaged: 0,
+            AllowZeroLengthRequests: 0,
+            DefaultQueue: 0,
+            EvtIoDefault: self.on_io_default,
+            EvtIoRead: self.on_io_read,
+            EvtIoWrite: self.on_io_write,
+            EvtIoDeviceControl: self.on_io_device_control,
+            EvtIoInternalDeviceControl: self.on_io_internal_device_control,
+            EvtIoStop: self.on_io_stop,
+            EvtIoResume: self.on_io_resume,
+            EvtIoCanceledOnQueue: self.on_io_canceled_on_queue,
+            Settings: Default::default(),
+            Driver: WDFDRIVER::default(),
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct WdfDevicePropsSetup {
     pub(crate) is_filter: bool,
