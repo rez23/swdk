@@ -1164,30 +1164,6 @@ mod _operators {
 
         fn from_owner(
             owner: &Self::Owner,
-        ) -> NtResult<Self>;
-
-        /// Creates a new instance of the type implementing this method, using the given owner and configuration.
-        ///
-        /// # Parameters
-        /// - `owner`: A reference to an instance of the associated `Owner` type.
-        ///   Typically, this represents the entity managing or related to the current instance.
-        /// - `conf`: A reference to an instance of the associated `Conf` type.
-        ///   This provides configuration or initialization parameters needed to create the instance.
-        ///
-        /// # Returns
-        /// - `NtResult<Self>`: On success, returns an instance of the implementing type wrapped in a result.
-        ///   If the creation fails, it returns an error wrapped in `NtResult`.
-        ///
-        /// # Errors
-        /// This method may fail and return an error if the provided `owner` or `conf`
-        /// do not meet certain requirements or creation constraints.
-        ///
-        /// # See Also
-        /// - [`crate::HandleRef`]
-        /// - [`crate::Handle`]
-        fn new_from_owner(
-            owner: &Self::Owner,
-            attrs: Option<WdfObjAttrs>
         ) -> NtResult<Self> {
             Self::allocate_from_owner(owner, None, None)
         }
