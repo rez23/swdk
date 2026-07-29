@@ -386,7 +386,7 @@ mod __runtime {
         use crate::ioctl::commands::IoCtlCommand;
         use crate::op::NtResult;
         use core::ffi::c_void;
-        use wdk_sys::{PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_PNPPOWER_EVENT_CALLBACKS, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, call_unsafe_wdf_function_binding};
+        use wdk_sys::{call_unsafe_wdf_function_binding, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_IO_QUEUE_CONFIG, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_PNPPOWER_EVENT_CALLBACKS, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, WDFQUEUE};
 
         #[inline]
         pub unsafe fn wdf_driver_create(
@@ -532,6 +532,22 @@ mod __runtime {
                 device_init,
                 callbacks,
             );
+        }
+        
+        #[inline]
+        pub unsafe fn wdf_io_queue_create(
+            device: WDFDEVICE,
+            config: PWDF_IO_QUEUE_CONFIG,
+            attrs: PWDF_OBJECT_ATTRIBUTES,
+            queue: *mut WDFQUEUE
+        ) -> NtResult {
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfIoQueueCreate,
+                device,
+                config,
+                attrs,
+                queue,
+            )
         }
 
     }
