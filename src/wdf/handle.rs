@@ -313,7 +313,7 @@ mod private {
                     ///   ensuring its proper management during the creation process.
                     /// - If additional context or attributes need to be applied beyond the basics, use the [`attrs`] parameter
                     ///   to specify them.
-                    pub fn from_owned<D>(
+                    pub fn allocate<D>(
                         owner: PWDFDEVICE_INIT,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self> where
@@ -429,6 +429,15 @@ mod private {
                         Ok(Self::new(driver))
                     }
                 }
+                impl Handle<WDFDRIVER> {
+                    pub fn allocate(
+                        p_driver_obj: PDRIVER_OBJECT,
+                        conf: WdfDriverConf,
+                        attrs: Option<WdfObjAttrs>
+                    ) -> NtResult<Self> {
+                        Self::allocate_from_owned(p_driver_obj, Some(conf), attrs)
+                    }
+                }
             }
             mod _wio_target {
                 #[cfg(feature = "kmdf-runtime")]
@@ -441,10 +450,7 @@ mod private {
                 use crate::ioctl::{
                     IoCtlRequest, IoCtlResponse,
                 };
-                use crate::op::{
-                    AsBuilder, AsBuilderMut, AsWdfOwned,
-                    NtResult,
-                };
+                use crate::op::{AsBuilder, AsBuilderMut, AsWdfFromOwner, AsWdfOwned, NtResult};
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::op::{AsOptionalBuff, AsRaw};
                 #[cfg(feature = "kmdf-runtime")]
@@ -498,17 +504,9 @@ mod private {
                             )
                         }
                     }
-
-                    pub fn allocate(
-                        owner: &WDFDEVICE,
-                    ) -> NtResult<Self> {
-                        Self::allocate_from_owner(
-                            owner,
-                            None,
-                            None,
-                        )
-                    }
                 }
+
+                impl AsWdfFromOwner<WDFIOTARGET> for Handle<WDFIOTARGET> {}
                 impl AsWdfOwned<WDFIOTARGET> for Handle<WDFIOTARGET> {
                     type Owner = WDFDEVICE;
                     type Conf = ();
@@ -734,7 +732,7 @@ mod private {
                 use wdk_sys::{STATUS_INVALID_PARAMETER, WDFDEVICE, WDFQUEUE, WDF_NO_HANDLE};
 
                 use crate::bd::{WdfIoQueueConfig, WdfObjAttrs};
-                use crate::op::{AsBuilder, AsWdfOwned, NtResult};
+                use crate::op::{AsBuilder, AsWdfOwned, AsWdfFromOwnerWithAttrs, NtResult, AsWdfFromOwnerWithConfAndAttrs};
                 use crate::rt::__cb;
                 use crate::wdf::handle::private::Handle;
 
@@ -772,6 +770,7 @@ mod private {
                         Ok(Self::new(queue))
                     }
                 }
+                impl AsWdfFromOwnerWithConfAndAttrs<WDFQUEUE> for Handle<WDFQUEUE> {}
             }
         }
     }

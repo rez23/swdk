@@ -1008,8 +1008,7 @@ mod _operators {
     /// - [`WdfObjAttrs`]
     /// - [`AsWdfOwned`]
     pub trait AsWdfOwner<O>:
-        Sized + AsPtr<O> + AsRef<O>
-    {
+        Sized + AsPtr<O> + AsRef<O> {
         type Conf;
         type Owned;
 
@@ -1058,14 +1057,15 @@ mod _operators {
             owned: Self::Owned,
             conf: Option<Self::Conf>,
             attrs: Option<WdfObjAttrs<D>>,
-        ) -> NtResult<Self>
-        where
-            D: AsCtxDescriptor;
-
+        ) -> NtResult<Self> where
+                D: AsCtxDescriptor;
+    }
+    
+    pub trait AsWdfFromOwnedWithConf<O>: AsWdfOwner<O> {
         /// Helpers to call [`AsWdfOwner::allocate_from_owned`] when no args are needed by the implementing type
         /// ### See Also
         /// - [`AsWdfOwner::allocate_from_owned`]
-        fn from_owned_with_conf(
+        fn allocate(
             owned: Self::Owned,
             conf: Self::Conf,
         ) -> NtResult<Self> {
@@ -1073,8 +1073,10 @@ mod _operators {
                 owned, Some(conf), None,
             )
         }
-        
-        fn from_owned_with_attrs_and_conf(
+    }
+    
+    pub trait AsWdfFromOwnedWithConfAndAttrs<O>: AsWdfOwner<O> {
+        fn allocate(
             owned: Self::Owned,
             conf: Self::Conf,
             attrs: WdfObjAttrs
@@ -1083,8 +1085,10 @@ mod _operators {
                 owned, Some(conf), Some(attrs),
             )
         }
-
-        fn from_owned_with_attrs(
+    }
+    
+    pub trait AsWdfFromOwnedWithAttrs<O>: AsWdfOwner<O> {
+        fn allocate(
             owned: Self::Owned,
             attrs: WdfObjAttrs
         ) -> NtResult<Self> {
@@ -1113,11 +1117,10 @@ mod _operators {
     /// - [`AsWdfOwned`]
     /// - [`AsPtr`]
     pub trait AsWdfOwned<O>:
-        Sized + AsPtr<O> + AsRef<O>
-    {
+        Sized + AsPtr<O> + AsRef<O> {
         type Owner;
         type Conf;
-        
+
         /// Creates an instance of `Self` where `Self` usually is some kinds of resources that are ***owned***
         /// by some other type of resources of type `Self::Owner` allocated in the kernel.
         ///
@@ -1139,29 +1142,37 @@ mod _operators {
             conf: Option<Self::Conf>,
             attrs: Option<WdfObjAttrs>
         ) -> NtResult<Self>;
-        
-        fn from_owner_with_attrs_and_conf(
+    }
+    
+    pub trait AsWdfFromOwnerWithConfAndAttrs<O>: AsWdfOwned<O> {
+        fn allocate(
             owner: &Self::Owner,
             conf: Self::Conf,
-            attrs: WdfObjAttrs
+            attrs: Option<WdfObjAttrs>
         ) -> NtResult<Self> {
-            Self::allocate_from_owner(owner, Some(conf), Some(attrs))
+            Self::allocate_from_owner(owner, Some(conf), attrs)
         }
-        
-        fn from_owner_with_attrs(
+    }
+    
+    pub trait AsWdfFromOwnerWithAttrs<O>: AsWdfOwned<O> {
+        fn allocate(
             owner: &Self::Owner,
-            attrs: WdfObjAttrs
+            attrs: Option<WdfObjAttrs>
         ) -> NtResult<Self> {
-            Self::allocate_from_owner(owner, None, Some(attrs))
+            Self::allocate_from_owner(owner, None, attrs)
         }
-        
-        fn from_owner_with_conf(
+    }
+    
+    pub trait AsWdfFromOwnerWithConf<O>: AsWdfOwned<O> {
+        fn allocate(
             owner: &Self::Owner,
             conf: Self::Conf,
         ) -> NtResult<Self> {
             Self::allocate_from_owner(owner, Some(conf), None)
         }
-
+    }
+    
+    pub trait AsWdfFromOwner<O>: AsWdfOwned<O> {
         fn from_owner(
             owner: &Self::Owner,
         ) -> NtResult<Self> {
