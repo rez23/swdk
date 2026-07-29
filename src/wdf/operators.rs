@@ -1054,23 +1054,42 @@ mod _operators {
         /// # }
         /// ```
         /// Above an exemplification of how is implemented `Handle<wdk_sys::WDFDEVICE>`
-        fn from_owned_with_attrs<D>(
+        fn allocate_from_owned<D>(
             owned: Self::Owned,
-            conf: Self::Conf,
+            conf: Option<Self::Conf>,
             attrs: Option<WdfObjAttrs<D>>,
         ) -> NtResult<Self>
         where
             D: AsCtxDescriptor;
 
-        /// Helpers to call [`AsWdfOwner::from_owned_with_attrs`] when no args are needed by the implementing type
+        /// Helpers to call [`AsWdfOwner::allocate_from_owned`] when no args are needed by the implementing type
         /// ### See Also
-        /// - [`AsWdfOwner::from_owned_with_attrs`]
-        fn from_owned(
+        /// - [`AsWdfOwner::allocate_from_owned`]
+        fn from_owned_with_conf(
             owned: Self::Owned,
             conf: Self::Conf,
         ) -> NtResult<Self> {
-            Self::from_owned_with_attrs::<WdfCtxNoneDesc>(
-                owned, conf, None,
+            Self::allocate_from_owned::<WdfCtxNoneDesc>(
+                owned, Some(conf), None,
+            )
+        }
+        
+        fn from_owned_with_attrs_and_conf(
+            owned: Self::Owned,
+            conf: Self::Conf,
+            attrs: WdfObjAttrs
+        ) -> NtResult<Self> {
+            Self::allocate_from_owned::<WdfCtxNoneDesc>(
+                owned, Some(conf), Some(attrs),
+            )
+        }
+
+        fn from_owned_with_attrs(
+            owned: Self::Owned,
+            attrs: WdfObjAttrs
+        ) -> NtResult<Self> {
+            Self::allocate_from_owned::<WdfCtxNoneDesc>(
+                owned, None, Some(attrs),
             )
         }
     }

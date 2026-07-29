@@ -50,7 +50,7 @@ mod private {
     /// ) -> NTSTATUS {
     ///     debug!("DriverEntry launched from WDF");
     ///     if_nterror_return_ntstatus!(
-    ///         Handle::<WDFDRIVER>::from_owned_with_attrs(
+    ///         Handle::<WDFDRIVER>::allocate_from_owned(
     ///             driver_obj,
     ///             WdfDriverConf {
     ///                 setup: WdfDriverSetup {
@@ -170,13 +170,23 @@ mod private {
                                          WDF_NO_HANDLE,
                 };
 
+                impl Handle<WDFOBJECT> {
+                    pub fn allocate(attrs: Option<WdfObjAttrs>) -> NtResult<Self> {
+                        Self::allocate_from_owned(
+                            (),
+                            None,
+                            attrs,
+                        )
+                    }
+                }
+
                 impl AsWdfOwner<WDFOBJECT> for Handle<WDFOBJECT> {
                     type Conf = ();
                     type Owned = ();
 
-                    fn from_owned_with_attrs<D>(
-                        _: Self::Conf,
+                    fn allocate_from_owned<D>(
                         _: Self::Owned,
+                        _: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
                     where
@@ -222,9 +232,9 @@ mod private {
                     type Conf = ();
                     type Owned = PWDFDEVICE_INIT;
 
-                    fn from_owned_with_attrs<D>(
+                    fn allocate_from_owned<D>(
                         owned: Self::Owned,
-                        _: Self::Conf,
+                        _: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
                         where
@@ -314,9 +324,9 @@ mod private {
                     where
                         D: AsCtxDescriptor,
                     {
-                        Self::from_owned_with_attrs::<D>(
+                        Self::allocate_from_owned::<D>(
                             owner,
-                            (),
+                            None,
                             attrs,
                         )
                     }
@@ -377,9 +387,9 @@ mod private {
                     type Conf = WdfDriverConf;
                     type Owned = PDRIVER_OBJECT;
 
-                    fn from_owned_with_attrs<D>(
+                    fn allocate_from_owned<D>(
                         owner: Self::Owned,
-                        conf: Self::Conf,
+                        conf: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
                     where
@@ -455,17 +465,10 @@ mod private {
                 use core::ptr;
                 use wdk_sys::{PWDF_IO_TARGET_OPEN_PARAMS, WDF_NO_HANDLE};
 
-                impl AsWdfOwned<WDFIOTARGET> for Handle<WDFIOTARGET> {
-                    type Owner = WDFDEVICE;
-                    #[cfg_attr(feature = "test-runtime",
-                        expect(unused_variables,
-                            reason = "Unused because of test-runtime"
-                        )
-                    )]
-                    fn from_owner(
-                        owner: &Self::Owner,
-                    ) -> NtResult<Self>
-                    {
+                impl Handle<WDFIOTARGET> {
+                    pub fn allocate_default(
+                        owner: &WDFDEVICE,
+                    ) -> NtResult<Self> {
                         #[cfg(feature = "kmdf-runtime")]
                         {
                             let device = owner;
@@ -490,7 +493,24 @@ mod private {
                         }
                     }
 
-                    fn new_from_owner(
+                    pub fn allocate(
+                        owner: &WDFDEVICE,
+                    ) -> NtResult<Self> {
+                        Self::allocate_from_owner(
+                            owner,
+                            None,
+                            None,
+                        )
+                    }
+                }
+                impl AsWdfOwned<WDFIOTARGET> for Handle<WDFIOTARGET> {
+                    type Owner = WDFDEVICE;
+                    type Conf = ();
+
+                    #[cfg_attr(feature = "test-runtime",
+                        expect(unused_variables,
+                            reason = "Unused because of test-runtime"))]
+                    fn allocate_from_owner(
                         owner: &Self::Owner,
                         attrs: Option<WdfObjAttrs>
                     ) -> NtResult<Self>
