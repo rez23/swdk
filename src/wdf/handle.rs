@@ -108,10 +108,14 @@ mod private {
     pub type HandleMut<'a, T = HANDLE> = Handle<&'a mut T>;
 
     mod _impls {
-        use crate::op::{AsPtr, AsRaw, AsRawWithBorrow, IntoInner, IntoRaw};
-        use crate::{Handle, HandleRef};
         use core::borrow::Borrow;
         use core::ops::Deref;
+
+        use crate::op::{
+            AsPtr, AsRaw, AsRawWithBorrow, IntoInner,
+            IntoRaw,
+        };
+        use crate::{Handle, HandleRef};
 
         impl<H> Handle<H> {
             pub fn new(raw: H) -> Self {
@@ -166,8 +170,8 @@ mod private {
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
-                use crate::rt::wdk_sys::{WDFOBJECT,
-                                         WDF_NO_HANDLE,
+                use crate::rt::wdk_sys::{
+                    WDF_NO_HANDLE, WDFOBJECT,
                 };
 
                 impl Handle<WDFOBJECT> {
@@ -221,8 +225,8 @@ mod private {
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
-                    PWDFDEVICE_INIT,
-                    WDFDEVICE, WDF_NO_HANDLE,
+                    PWDFDEVICE_INIT, WDF_NO_HANDLE,
+                    WDFDEVICE,
                 };
 
                 impl AsWdfOwner<WDFDEVICE> for Handle<WDFDEVICE> {
@@ -325,11 +329,13 @@ mod private {
             }
             mod _pdevice_init {
                 use core::ptr;
-                use crate::rt::__cb;
-                use crate::HandleRef;
+
                 use wdk_sys::PWDFDEVICE_INIT;
+
+                use crate::HandleRef;
                 use crate::bd::WdfDevicePnpPowerSetup;
                 use crate::op::{AsBuilder, IntoRaw};
+                use crate::rt::__cb;
 
                 impl<'a> HandleRef<'a, PWDFDEVICE_INIT> {
                     #[inline]
@@ -668,15 +674,11 @@ mod private {
 
                         #[cfg_attr(
                             feature = "test-runtime",
-                            expect(
-                                unused_variables,
-                                reason = "Unused because of test-runtime"
-                            )
-                        )]
-                        let request_desc_ptr =
-                            from_option_to_ptr(
-                                request_desc.as_ref(),
-                            );
+                            expect(unused_variables,
+                                reason = "Unused because of test-runtime")
+                        )] let request_desc_ptr = from_option_to_ptr(
+                            request_desc.as_ref(),
+                        );
 
                         // build Ioctl output buffer ptr
                         let mut response = IoCtlResponse::<R>::default();
@@ -685,18 +687,15 @@ mod private {
                             feature = "test-runtime",
                             expect(unused_mut,
                                 unused_variables,
-                                reason = "Unused because of test-runtime"
-                            )
-                        )]
-                        let mut response_desc =
-                            response.build_mut();
+                                reason = "Unused because of test-runtime")
+                        )] let mut response_desc = response.build_mut();
 
                         #[cfg_attr(
                             feature = "test-runtime",
                             expect(unused_mut,
                                 unused_variables,
-                                reason = "Unused because of test-runtime"
-                            ))] let mut bytes_returned: ULONG_PTR = 0;
+                                reason = "Unused because of test-runtime")
+                        )] let mut bytes_returned: ULONG_PTR = 0;
 
                         #[cfg(feature = "kmdf-runtime")]
                         // SAFETY: Is iot safe since output_desc and bytes_returned are valid pointers
