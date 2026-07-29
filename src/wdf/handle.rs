@@ -725,7 +725,48 @@ mod private {
 
                     pub fn open(
                         params: PWDF_IO_TARGET_OPEN_PARAMS,
-                    ) {
+                    ) {}
+                }
+            }
+
+            mod _wdf_queue {
+                use core::ptr;
+                use wdk_sys::{STATUS_INVALID_PARAMETER, WDFDEVICE, WDFQUEUE, WDF_NO_HANDLE};
+
+                use crate::bd::{WdfIoQueueConfig, WdfObjAttrs};
+                use crate::op::{AsBuilder, AsWdfOwned, NtResult};
+                use crate::rt::__cb;
+                use crate::wdf::handle::private::Handle;
+
+                impl AsWdfOwned<WDFQUEUE> for Handle<WDFQUEUE> {
+                    type Owner = WDFDEVICE;
+                    type Conf = WdfIoQueueConfig;
+
+                    fn allocate_from_owner(owner: &Self::Owner, conf: Option<Self::Conf>, attrs: Option<WdfObjAttrs>) -> NtResult<Self> {
+                        let mut queue = WDF_NO_HANDLE.cast();
+                        let device = ptr::NonNull::new(*owner)
+                            .ok_or(STATUS_INVALID_PARAMETER)?
+                            .as_ptr();
+
+                        let mut config = conf.map(|c| c.build()).ok_or(STATUS_INVALID_PARAMETER)?;
+                        let mut attrs = attrs.map(|a| a.build());
+
+                        let attrs_ptr = attrs.as_mut().map_or(
+                            ptr::null_mut(),
+                            ptr::from_mut,
+                        );
+
+                        #[cfg(feature = "kmdf-runtime")]
+                        // SAFETY: `device` is safe because cannot be null
+                        //          and is passed directly from wdf
+                        unsafe {
+                            __cb::wdf_io_queue_create(
+                                device,
+                                &raw mut config,
+                                attrs_ptr,
+                                &raw mut queue,
+                            )
+                        }?;
 
 
                         Ok(Self::new(queue))
