@@ -1116,6 +1116,8 @@ mod _operators {
         Sized + AsPtr<O> + AsRef<O>
     {
         type Owner;
+        type Conf;
+        
         /// Creates an instance of `Self` where `Self` usually is some kinds of resources that are ***owned***
         /// by some other type of resources of type `Self::Owner` allocated in the kernel.
         ///
@@ -1132,6 +1134,34 @@ mod _operators {
         ///
         /// ### Se Also
         /// - [`Handle`]: for look to a possible implementation
+        fn allocate_from_owner(
+            owner: &Self::Owner,
+            conf: Option<Self::Conf>,
+            attrs: Option<WdfObjAttrs>
+        ) -> NtResult<Self>;
+        
+        fn from_owner_with_attrs_and_conf(
+            owner: &Self::Owner,
+            conf: Self::Conf,
+            attrs: WdfObjAttrs
+        ) -> NtResult<Self> {
+            Self::allocate_from_owner(owner, Some(conf), Some(attrs))
+        }
+        
+        fn from_owner_with_attrs(
+            owner: &Self::Owner,
+            attrs: WdfObjAttrs
+        ) -> NtResult<Self> {
+            Self::allocate_from_owner(owner, None, Some(attrs))
+        }
+        
+        fn from_owner_with_conf(
+            owner: &Self::Owner,
+            conf: Self::Conf,
+        ) -> NtResult<Self> {
+            Self::allocate_from_owner(owner, Some(conf), None)
+        }
+
         fn from_owner(
             owner: &Self::Owner,
         ) -> NtResult<Self>;
@@ -1159,7 +1189,7 @@ mod _operators {
             owner: &Self::Owner,
             attrs: Option<WdfObjAttrs>
         ) -> NtResult<Self> {
-            Self::from_owner(owner)
+            Self::allocate_from_owner(owner, None, None)
         }
     }
 
