@@ -146,8 +146,9 @@ Probably the primary objective of *swdk* is
 
 Two key ideas lie at the heart of swdk:
 
-1. Every WDF resource can be represented by a `Handle`.
-2. `Handle` knows how to present itself to WDF for operations such as allocation, deallocation, initialization, ecc on the resource that handle.
+1. `Handle` represent a generic handle to a runtime kernel resource described by WDF (eg: WDFDEVICE, WDFDRIVER, WDFDRIVER_INT, ecc).
+2. `Handle` deal with resources that handle (allocation, deallocation, initialization, ecc).
+3. `Handle` permit to extends any WDF resource without touching the raw WDF types that handle.
 
 swdk implements these ideas through a deliberately simple default concept:
 
