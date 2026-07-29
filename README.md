@@ -146,10 +146,10 @@ Probably the primary objective of *swdk* is
 
 Two key ideas lie at the heart of swdk:
 
-- Every WDF resource can be represented by a `Handle`.
-- A `Handle` knows how to present its underlying object or resource to WDF for operations such as allocation, deallocation, and initialization.
+1. Every WDF resource can be represented by a `Handle`.
+2. `Handle` knows how to present itself to WDF for operations such as allocation, deallocation, initialization, ecc on the resource that handle.
 
-swdk implements these ideas through a deliberately simple type:
+swdk implements these ideas through a deliberately simple default concept:
 
 ```rust
 Handle<T>
