@@ -122,6 +122,8 @@ mod private {
                 Self(raw)
             }
         }
+
+        impl<H: Copy> AsWdfType<H> for Handle<H> {}
         impl<H> IntoInner<H> for Handle<H> {
             fn into_inner(self) -> H {
                 self.0
