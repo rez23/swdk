@@ -1,5 +1,6 @@
 use swdk::Handle;
-use swdk::op::{AsRaw, AsRawWithBorrow};
+use swdk::op::{AsRaw, AsRawWithBorrow, AsWdfObject};
+use swdk::rt::wdk_sys::WDFDEVICE;
 
 #[test]
 fn can_create_handle() {
@@ -29,4 +30,14 @@ fn raw_with_borrow_returns_inner() {
     let handle = Handle::new(&value);
 
     assert_eq!(handle.raw_with_borrow(), 99);
+}
+
+#[test]
+fn device_handle_can_be_seen_as_wdf_object() {
+    let raw: WDFDEVICE = core::ptr::dangling_mut();
+
+    let handle = Handle::<WDFDEVICE>::new(raw);
+    let object = handle.as_wdf_object();
+
+    assert_eq!(object.cast::<()>(), raw.cast::<()>());
 }

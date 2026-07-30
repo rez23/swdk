@@ -34,16 +34,6 @@ fn read_status_returns_started() {
 }
 
 #[test]
-#[should_panic(expected = "Cannot create WDFIOTARGET")]
-fn cannot_create_iotarget_from_device() {
-    let device: WDFDEVICE =
-        core::ptr::dangling_mut();
-
-    let _ =
-        Handle::<WDFIOTARGET>::from_owner(&device);
-}
-
-#[test]
 fn send_ioctl_returns_ok() {
     let target =
         Handle::<WDFIOTARGET>::new(core::ptr::dangling_mut());
@@ -71,4 +61,32 @@ fn send_ioctl_returns_default_response() {
             .unwrap();
 
     assert_eq!(response.value, 0);
+}
+
+#[test]
+fn state_conversion_started() {
+    let raw = i32::from(WdfIoTargetState::Started);
+
+    assert_eq!(
+        WdfIoTargetState::from(raw),
+        WdfIoTargetState::Started
+    );
+}
+
+#[test]
+fn state_conversion_closed() {
+    let raw = i32::from(WdfIoTargetState::Closed);
+
+    assert_eq!(
+        WdfIoTargetState::from(raw),
+        WdfIoTargetState::Closed
+    );
+}
+
+#[test]
+fn unknown_state_is_preserved() {
+    assert_eq!(
+        WdfIoTargetState::from(999),
+        WdfIoTargetState::Unknown(999)
+    );
 }

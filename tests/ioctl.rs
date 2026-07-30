@@ -103,3 +103,27 @@ fn response_build_produces_non_empty_descriptor() {
         0
     );
 }
+
+#[test]
+fn request_with_payload_builds_non_null_buffer() {
+    let request = IoCtlRequest::new(0x1234, 42u32);
+    let desc = request.build().unwrap();
+
+    assert!(!unsafe { desc.u.BufferType.Buffer }.is_null());
+}
+
+#[test]
+fn response_build_produces_non_null_buffer() {
+    let response = IoCtlResponse::<u32>::default();
+    let desc = response.build();
+
+    assert!(!unsafe { desc.u.BufferType.Buffer }.is_null());
+}
+
+#[test]
+fn response_build_mut_produces_non_null_buffer() {
+    let mut response = IoCtlResponse::<u32>::default();
+    let desc = response.build_mut();
+
+    assert!(!unsafe { desc.u.BufferType.Buffer }.is_null());
+}
