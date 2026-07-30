@@ -3,6 +3,7 @@ mod _concepts {
 
     pub type NtResult<T = ()> = Result<T, NTSTATUS>;
 }
+
 mod _operators {
     use alloc::string::String;
     use alloc::vec::Vec;
@@ -142,13 +143,17 @@ mod _operators {
         }
     }
 
-    pub unsafe trait AsWdfObject<O: Copy>: AsWdfHandle<O> {
+    pub unsafe trait AsWdfObject<O: Copy>:
+        AsWdfHandle<O>
+    {
         fn as_wdf_object(&self) -> WDFOBJECT {
             self.as_wdf_handle().cast()
         }
     }
 
-    pub unsafe trait AsWdfHandle<H: Copy>: AsWdfType<H> {
+    pub unsafe trait AsWdfHandle<H: Copy>:
+        AsWdfType<H>
+    {
         fn as_wdf_handle(&self) -> HANDLE;
     }
 
@@ -1099,8 +1104,7 @@ mod _operators {
     /// - [`Handle`]
     /// - [`WdfObjAttrs`]
     /// - [`AsWdfOwned`]
-    pub trait AsWdfOwner<O>:
-        Sized + AsPtr<O> + AsRef<O> {
+    pub trait AsWdfOwner<O: Copy>: AsWdfType<O> {
         type Conf;
         type Owned;
 
@@ -1149,11 +1153,14 @@ mod _operators {
             owned: Self::Owned,
             conf: Option<Self::Conf>,
             attrs: Option<WdfObjAttrs<D>>,
-        ) -> NtResult<Self> where
-                D: AsCtxDescriptor;
+        ) -> NtResult<Self>
+        where
+            D: AsCtxDescriptor;
     }
-    
-    pub trait AsWdfFromOwnedWithConf<O>: AsWdfOwner<O> {
+
+    pub trait AsWdfFromOwnedWithConf<O: Copy>:
+        AsWdfOwner<O>
+    {
         /// Helpers to call [`AsWdfOwner::allocate_from_owned`] when no args are needed by the implementing type
         /// ### See Also
         /// - [`AsWdfOwner::allocate_from_owned`]
@@ -1162,30 +1169,40 @@ mod _operators {
             conf: Self::Conf,
         ) -> NtResult<Self> {
             Self::allocate_from_owned::<WdfCtxNoneDesc>(
-                owned, Some(conf), None,
+                owned,
+                Some(conf),
+                None,
             )
         }
     }
-    
-    pub trait AsWdfFromOwnedWithConfAndAttrs<O>: AsWdfOwner<O> {
+
+    pub trait AsWdfFromOwnedWithConfAndAttrs<O: Copy>:
+        AsWdfOwner<O>
+    {
         fn allocate(
             owned: Self::Owned,
             conf: Self::Conf,
-            attrs: WdfObjAttrs
+            attrs: WdfObjAttrs,
         ) -> NtResult<Self> {
             Self::allocate_from_owned::<WdfCtxNoneDesc>(
-                owned, Some(conf), Some(attrs),
+                owned,
+                Some(conf),
+                Some(attrs),
             )
         }
     }
-    
-    pub trait AsWdfFromOwnedWithAttrs<O>: AsWdfOwner<O> {
+
+    pub trait AsWdfFromOwnedWithAttrs<O: Copy>:
+        AsWdfOwner<O>
+    {
         fn allocate(
             owned: Self::Owned,
-            attrs: WdfObjAttrs
+            attrs: WdfObjAttrs,
         ) -> NtResult<Self> {
             Self::allocate_from_owned::<WdfCtxNoneDesc>(
-                owned, None, Some(attrs),
+                owned,
+                None,
+                Some(attrs),
             )
         }
     }
@@ -1208,8 +1225,7 @@ mod _operators {
     /// - [`Handle`]
     /// - [`AsWdfOwned`]
     /// - [`AsPtr`]
-    pub trait AsWdfOwned<O>:
-        Sized + AsPtr<O> + AsRef<O> {
+    pub trait AsWdfOwned<O: Copy>: AsWdfType<O> {
         type Owner;
         type Conf;
 
@@ -1232,39 +1248,55 @@ mod _operators {
         fn allocate_from_owner(
             owner: &Self::Owner,
             conf: Option<Self::Conf>,
-            attrs: Option<WdfObjAttrs>
+            attrs: Option<WdfObjAttrs>,
         ) -> NtResult<Self>;
     }
-    
-    pub trait AsWdfFromOwnerWithConfAndAttrs<O>: AsWdfOwned<O> {
+
+    pub trait AsWdfFromOwnerWithConfAndAttrs<O: Copy>:
+        AsWdfOwned<O>
+    {
         fn allocate(
             owner: &Self::Owner,
             conf: Self::Conf,
-            attrs: Option<WdfObjAttrs>
+            attrs: Option<WdfObjAttrs>,
         ) -> NtResult<Self> {
-            Self::allocate_from_owner(owner, Some(conf), attrs)
+            Self::allocate_from_owner(
+                owner,
+                Some(conf),
+                attrs,
+            )
         }
     }
-    
-    pub trait AsWdfFromOwnerWithAttrs<O>: AsWdfOwned<O> {
+
+    pub trait AsWdfFromOwnerWithAttrs<O: Copy>:
+        AsWdfOwned<O>
+    {
         fn allocate(
             owner: &Self::Owner,
-            attrs: Option<WdfObjAttrs>
+            attrs: Option<WdfObjAttrs>,
         ) -> NtResult<Self> {
             Self::allocate_from_owner(owner, None, attrs)
         }
     }
-    
-    pub trait AsWdfFromOwnerWithConf<O>: AsWdfOwned<O> {
+
+    pub trait AsWdfFromOwnerWithConf<O: Copy>:
+        AsWdfOwned<O>
+    {
         fn allocate(
             owner: &Self::Owner,
             conf: Self::Conf,
         ) -> NtResult<Self> {
-            Self::allocate_from_owner(owner, Some(conf), None)
+            Self::allocate_from_owner(
+                owner,
+                Some(conf),
+                None,
+            )
         }
     }
-    
-    pub trait AsWdfFromOwner<O>: AsWdfOwned<O> {
+
+    pub trait AsWdfFromOwner<O: Copy>:
+        AsWdfOwned<O>
+    {
         fn from_owner(
             owner: &Self::Owner,
         ) -> NtResult<Self> {
@@ -1329,7 +1361,6 @@ mod _operators {
     /// By using the `into_inner` method, you take ownership of the inner value `42`,
     /// and the wrapper `SomeWrapper` is consumed in the process.
     pub trait IntoInner<T>: AsRef<T> {
-
         /// Consumes the wrapper and returns the inner value.
         ///
         /// # Returns
@@ -1512,7 +1543,10 @@ mod _operators {
     ///
     /// # See Also
     /// - `AsCtxDescriptor`: The parent trait that must be implemented alongside this trait.
-    pub trait AsNoneCtxDesc<O = ()>: AsCtxDescriptor {}
+    pub trait AsNoneCtxDesc<O = ()>:
+        AsCtxDescriptor
+    {
+    }
 
     /// Describe a generic data type that is able to expose an handle
     /// to a static instance of `WDF_OBJECT_CONTEXT_TYPE_INFO`
@@ -1565,7 +1599,9 @@ mod _operators {
         fn fmt_hex(self) -> String;
     }
 
-    pub trait IntoRaw<O: Copy>: Deref<Target=O>+Sized {
+    pub trait IntoRaw<O: Copy>:
+        Deref<Target = O> + Sized
+    {
         fn into_raw(self) -> O {
             *self.deref()
         }
