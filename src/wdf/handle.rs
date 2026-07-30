@@ -188,6 +188,9 @@ mod private {
                                          WDF_NO_HANDLE,
                 };
 
+                #[cfg(feature = "kmdf-runtime")]
+                unsafe impl AsWdfObject<WDFOBJECT> for Handle<WDFOBJECT> {}
+
                 impl Handle<WDFOBJECT> {
                     pub fn allocate(attrs: Option<WdfObjAttrs>) -> NtResult<Self> {
                         Self::allocate_from_owned(
@@ -226,6 +229,9 @@ mod private {
                         Ok(Handle::new(obj))
                     }
                 }
+                
+                #[cfg(feature = "kmdf-runtime")]
+                unsafe impl AsWdfWithCtx<WDFOBJECT> for Handle<WDFOBJECT> {}
             }
             mod _wdfdevice {
                 use core::ptr;
@@ -348,11 +354,13 @@ mod private {
 
                 use crate::HandleRef;
                 use crate::bd::WdfDevicePnpPowerSetup;
-                use crate::op::{AsBuilder, IntoRaw};
+                use crate::op::AsBuilder;
+                #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
 
                 impl<'a> HandleRef<'a, PWDFDEVICE_INIT> {
                     #[inline]
+                    #[cfg(feature = "kmdf-runtime")]
                     pub fn with_filter(self) -> Self {
                         unsafe {
                             __cb::wdf_f_do_init_set_filter(
@@ -363,6 +371,7 @@ mod private {
                     }
 
                     #[inline]
+                    #[cfg(feature = "kmdf-runtime")]
                     pub fn with_pnp_setup(
                         self,
                         setup: WdfDevicePnpPowerSetup,
@@ -520,7 +529,10 @@ mod private {
                     }
                 }
 
+                #[cfg(feature = "kmdf-runtime")]
                 impl AsWdfFromOwner<WDFIOTARGET> for Handle<WDFIOTARGET> {}
+
+                #[cfg(feature = "kmdf-runtime")]
                 impl AsWdfOwned<WDFIOTARGET> for Handle<WDFIOTARGET> {
                     type Owner = WDFDEVICE;
                     type Conf = ();
@@ -745,8 +757,16 @@ mod private {
                 use core::ptr;
                 use wdk_sys::{STATUS_INVALID_PARAMETER, WDFDEVICE, WDFQUEUE, WDF_NO_HANDLE};
 
-                use crate::bd::{WdfIoQueueConfig, WdfObjAttrs};
-                use crate::op::{AsBuilder, AsWdfOwned, AsWdfFromOwnerWithAttrs, NtResult, AsWdfFromOwnerWithConfAndAttrs};
+                use crate::bd::{
+                    WdfIoQueueConfig, WdfObjAttrs,
+                };
+                use crate::op::{
+                    AsBuilder,
+                    AsWdfFromOwnerWithConfAndAttrs,
+                    AsWdfOwned, NtResult,
+                };
+
+                #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::wdf::handle::private::Handle;
 
