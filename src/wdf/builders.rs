@@ -202,7 +202,7 @@ pub struct WdfObjAttrs<D: AsCtxDescriptor = WdfCtxNoneDesc>
     pub sync_scope: WdfSyncScope,
     pub execution_level: WdfExecutionLevel,
     pub parent_obj: Option<Handle<WDFOBJECT>>,
-    _descriptor: D,
+    _descriptor: PhantomData<D>,
 }
 impl<D: AsCtxDescriptor> AsBuilder for WdfObjAttrs<D> {
     type Descriptor<'b>
@@ -243,7 +243,7 @@ impl<D: AsCtxDescriptor> Default for WdfObjAttrs<D> {
             parent_obj: None,
             on_cleanup: None,
             on_destroy: None,
-            _descriptor: D::default(),
+            _descriptor: PhantomData,
         }
     }
 }
