@@ -217,7 +217,7 @@ impl<D: AsCtxDescriptor> AsBuilder for WdfObjAttrs<D> {
             .map_or(ptr::null_mut(), |ptr| ptr.raw());
 
         let unique: PCWDF_OBJECT_CONTEXT_TYPE_INFO =
-            D::unique().unwrap_or(ptr::null());
+            D::descriptor().unwrap_or(ptr::null());
 
         WDF_OBJECT_ATTRIBUTES {
             Size: const_size_to_ulong!(
