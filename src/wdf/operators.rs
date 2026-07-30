@@ -4,19 +4,20 @@ mod _concepts {
     pub type NtResult<T = ()> = Result<T, NTSTATUS>;
 }
 mod _operators {
-    use alloc::format;
     use alloc::string::String;
     use alloc::vec::Vec;
     use core::borrow::Borrow;
     use core::ops::Deref;
     use core::ptr;
-
-    use crate::rt::wdk_sys::PCWDF_OBJECT_CONTEXT_TYPE_INFO;
+    use core::ptr::NonNull;
 
     use crate::bd::WdfObjAttrs;
     use crate::ctx::WdfCtxNoneDesc;
     use crate::op::_concepts::NtResult;
-    use crate::HandleRef;
+    use crate::rt::wdk_sys::{
+        HANDLE, PCWDF_OBJECT_CONTEXT_TYPE_INFO, WDFOBJECT,
+    };
+    use crate::{Handle, HandleRef};
 
     /// A trait providing utility methods for working with raw pointers.
     ///
