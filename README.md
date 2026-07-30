@@ -157,7 +157,7 @@ Probably the primary objective of *swdk* is
 
 # Philosophy
 
-Two key ideas lie at the heart of swdk:
+Fews key ideas lie at the heart of swdk:
 
 1. `Handle` represent a generic handle to a runtime kernel resource described by WDF (eg: WDFDEVICE, WDFDRIVER, WDFDRIVER_INT, ecc).
 2. `Handle` deal with resources that handle (allocation, deallocation, initialization, ecc).
