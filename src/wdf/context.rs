@@ -132,5 +132,5 @@ impl AsNoneCtxUnique for WdfCtxNull {}
 /// Represents the absence of the context descriptor for a [`IsWdfHandle`] type
 #[derive(Default)]
 pub struct WdfCtxNoneDesc;
-impl AsCtxDescriptor for WdfCtxNoneDesc {}
+unsafe impl AsCtxDescriptor for WdfCtxNoneDesc {}
 impl AsNoneCtxDesc for WdfCtxNoneDesc {}
