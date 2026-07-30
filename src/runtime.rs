@@ -11,8 +11,302 @@ mod __runtime {
 
         pub mod wdk_sys {
             use core::ffi::c_void;
-            use wdk_sys::_WDF_IO_TARGET_STATE::Type;
+            #[repr(C)]
+            #[derive(Default, Copy, Clone)]
+            pub struct WDF_PNPPOWER_EVENT_CALLBACKS {
+                pub Size: ULONG,
 
+                pub EvtDevicePrepareHardware:
+                    PFN_WDF_DEVICE_PREPARE_HARDWARE,
+
+                pub EvtDeviceReleaseHardware:
+                    PFN_WDF_DEVICE_RELEASE_HARDWARE,
+
+                pub EvtDeviceD0Entry:
+                    PFN_WDF_DEVICE_D0_ENTRY,
+
+                pub EvtDeviceD0EntryPostInterruptsEnabled:
+                    PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED,
+
+                pub EvtDeviceD0Exit:
+                    PFN_WDF_DEVICE_D0_EXIT,
+
+                pub EvtDeviceD0ExitPreInterruptsDisabled:
+                    PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED,
+
+                pub EvtDeviceSelfManagedIoInit:
+                    PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT,
+
+                pub EvtDeviceSelfManagedIoSuspend:
+                    PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND,
+
+                pub EvtDeviceSelfManagedIoRestart:
+                    PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART,
+
+                pub EvtDeviceSelfManagedIoFlush:
+                    PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH,
+
+                pub EvtDeviceSelfManagedIoCleanup:
+                    PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP,
+
+                pub EvtDeviceSurpriseRemoval:
+                    PFN_WDF_DEVICE_SURPRISE_REMOVAL,
+
+                pub EvtDeviceQueryRemove:
+                    PFN_WDF_DEVICE_QUERY_REMOVE,
+
+                pub EvtDeviceQueryStop:
+                    PFN_WDF_DEVICE_QUERY_STOP,
+
+                pub EvtDeviceUsageNotification:
+                    PFN_WDF_DEVICE_USAGE_NOTIFICATION,
+
+                pub EvtDeviceRelationsQuery:
+                    PFN_WDF_DEVICE_RELATIONS_QUERY,
+
+                pub EvtDeviceUsageNotificationEx:
+                    PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX,
+            }
+            //
+            // I/O queue
+            //
+
+            pub type WDF_IO_QUEUE_DISPATCH_TYPE = core::ffi::c_int;
+            pub type WDF_TRI_STATE = core::ffi::c_int;
+
+            pub mod _WDF_IO_QUEUE_DISPATCH_TYPE {
+                pub type Type = core::ffi::c_int;
+
+                pub const WdfIoQueueDispatchInvalid: Type = 0;
+                pub const WdfIoQueueDispatchSequential: Type = 1;
+                pub const WdfIoQueueDispatchParallel: Type = 2;
+                pub const WdfIoQueueDispatchManual: Type = 3;
+            }
+
+            pub mod _WDF_TRI_STATE {
+                pub type Type = core::ffi::c_int;
+
+                pub const WdfFalse: Type = 0;
+                pub const WdfTrue: Type = 1;
+                pub const WdfUseDefault: Type = 2;
+            }
+
+            pub type PFN_WDF_IO_QUEUE_IO_DEFAULT =
+            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST)>;
+
+            pub type PFN_WDF_IO_QUEUE_IO_READ =
+            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST, usize)>;
+
+            pub type PFN_WDF_IO_QUEUE_IO_WRITE =
+            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST, usize)>;
+
+            pub type PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL =
+            Option<
+                unsafe extern "C" fn(
+                    WDFQUEUE,
+                    WDFREQUEST,
+                    usize,
+                    usize,
+                    ULONG,
+                ),
+            >;
+
+            pub type PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL =
+            Option<
+                unsafe extern "C" fn(
+                    WDFQUEUE,
+                    WDFREQUEST,
+                    usize,
+                    usize,
+                    ULONG,
+                ),
+            >;
+
+            #[repr(C)]
+            #[derive(Copy, Clone)]
+            pub struct WDF_IO_QUEUE_CONFIG {
+                pub Size: ULONG,
+
+                pub DispatchType: WDF_IO_QUEUE_DISPATCH_TYPE,
+
+                pub PowerManaged: WDF_TRI_STATE,
+
+                pub AllowZeroLengthRequests: BOOLEAN,
+
+                pub DefaultQueue: BOOLEAN,
+
+                pub EvtIoDefault:
+                    PFN_WDF_IO_QUEUE_IO_DEFAULT,
+
+                pub EvtIoRead:
+                    PFN_WDF_IO_QUEUE_IO_READ,
+
+                pub EvtIoWrite:
+                    PFN_WDF_IO_QUEUE_IO_WRITE,
+
+                pub EvtIoDeviceControl:
+                    PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL,
+
+                pub EvtIoInternalDeviceControl:
+                    PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL,
+
+                pub EvtIoStop:
+                    PFN_WDF_IO_QUEUE_IO_STOP,
+
+                pub EvtIoResume:
+                    PFN_WDF_IO_QUEUE_IO_RESUME,
+
+                pub EvtIoCanceledOnQueue:
+                    PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE,
+
+                pub Settings: _WDF_IO_QUEUE_CONFIG__bindgen_ty_1,
+
+                pub Driver: WDFDRIVER,
+            }
+            #[repr(C)]
+            #[derive(Copy, Clone)]
+            pub union _WDF_IO_QUEUE_CONFIG__bindgen_ty_1 {
+                pub Parallel: ULONG,
+                pub Sequential: ULONG,
+                pub Manual: ULONG,
+            }
+
+            pub type PFN_WDF_IO_TARGET_QUERY_REMOVE =
+            Option<
+                unsafe extern "C" fn(
+                    WDFIOTARGET,
+                ) -> NTSTATUS,
+            >;
+
+            pub type PFN_WDF_IO_TARGET_REMOVE_CANCELED =
+            Option<
+                unsafe extern "C" fn(
+                    WDFIOTARGET,
+                ),
+            >;
+
+            pub type PFN_WDF_IO_TARGET_REMOVE_COMPLETE =
+            Option<
+                unsafe extern "C" fn(
+                    WDFIOTARGET,
+                ),
+            >;
+
+            impl Default for _WDF_IO_QUEUE_CONFIG__bindgen_ty_1 {
+                fn default() -> Self {
+                    Self { Parallel: 0 }
+                }
+            }
+            impl Default for WDF_IO_QUEUE_CONFIG {
+                fn default() -> Self {
+                    Self {
+                        Size: 0,
+
+                        DispatchType:
+                        _WDF_IO_QUEUE_DISPATCH_TYPE::WdfIoQueueDispatchInvalid,
+
+                        PowerManaged:
+                        _WDF_TRI_STATE::WdfUseDefault,
+
+                        AllowZeroLengthRequests: 0,
+
+                        DefaultQueue: 0,
+
+                        EvtIoDefault: None,
+                        EvtIoRead: None,
+                        EvtIoWrite: None,
+                        EvtIoDeviceControl: None,
+                        EvtIoInternalDeviceControl: None,
+                        EvtIoStop: None,
+                        EvtIoResume: None,
+                        EvtIoCanceledOnQueue: None,
+
+                        Settings: Default::default(),
+
+                        Driver: core::ptr::null_mut(),
+                    }
+                }
+            }
+            pub type PFN_WDF_IO_QUEUE_IO_STOP =
+            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST, ULONG)>;
+
+            pub type PFN_WDF_IO_QUEUE_IO_RESUME =
+            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST)>;
+
+            pub type PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE =
+            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST)>;
+
+
+            //
+            // Common scalar / pointer aliases
+            //
+
+            pub type BOOLEAN = u8;
+            pub type ACCESS_MASK = u32;
+            pub type PLONGLONG = *mut i64;
+
+            #[repr(C)]
+            pub struct _FILE_OBJECT {
+                _priv: [u8; 0],
+            }
+
+            //
+            // Power / PnP
+            //
+
+            pub type WDF_POWER_DEVICE_STATE = core::ffi::c_int;
+
+            pub type PFN_WDF_DEVICE_PREPARE_HARDWARE =
+            Option<unsafe extern "C" fn(WDFDEVICE, PVOID, PVOID) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_RELEASE_HARDWARE =
+            Option<unsafe extern "C" fn(WDFDEVICE, PVOID) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_D0_ENTRY =
+            Option<unsafe extern "C" fn(WDFDEVICE, WDF_POWER_DEVICE_STATE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED =
+            Option<unsafe extern "C" fn(WDFDEVICE, WDF_POWER_DEVICE_STATE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_D0_EXIT =
+            Option<unsafe extern "C" fn(WDFDEVICE, WDF_POWER_DEVICE_STATE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED =
+            Option<unsafe extern "C" fn(WDFDEVICE, WDF_POWER_DEVICE_STATE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT =
+            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH =
+            Option<unsafe extern "C" fn(WDFDEVICE)>;
+
+            pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP =
+            Option<unsafe extern "C" fn(WDFDEVICE)>;
+
+            pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND =
+            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART =
+            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_SURPRISE_REMOVAL =
+            Option<unsafe extern "C" fn(WDFDEVICE)>;
+
+            pub type PFN_WDF_DEVICE_QUERY_REMOVE =
+            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_QUERY_STOP =
+            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_USAGE_NOTIFICATION =
+            Option<unsafe extern "C" fn(WDFDEVICE, core::ffi::c_int, BOOLEAN) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX =
+            Option<unsafe extern "C" fn(WDFDEVICE, core::ffi::c_int, BOOLEAN) -> NTSTATUS>;
+
+            pub type PFN_WDF_DEVICE_RELATIONS_QUERY =
+            Option<unsafe extern "C" fn(WDFDEVICE, core::ffi::c_int)>;
+            pub type PFILE_OBJECT = *mut _FILE_OBJECT;
             #[macro_export]
             macro_rules! call_unsafe_wdf_function_binding {
                 ($func:ident $(, $args:expr)* $(,)?) => {{}};
@@ -22,6 +316,8 @@ mod __runtime {
             // Base types
             //
 
+            pub(crate) const STATUS_INVALID_PARAMETER: NTSTATUS = 0xC000000Du32 as i32;
+            pub(crate) type PWDF_IO_TARGET_OPEN_PARAMS = *mut c_void;
             pub type HANDLE = *mut c_void;
             pub type PVOID = *mut c_void;
 
@@ -249,7 +545,7 @@ mod __runtime {
             // IO Target State
             //
 
-            pub type WDF_IO_TARGET_STATE = u32;
+            pub type WDF_IO_TARGET_STATE = core::ffi::c_int;
 
             //
             // WDF_MEMORY_DESCRIPTOR_TYPE
@@ -321,25 +617,7 @@ mod __runtime {
             }
 
             pub mod _WDF_IO_TARGET_STATE {
-                use super::WDF_IO_TARGET_STATE;
-
-                pub const WdfIoTargetStateUndefined:
-                    WDF_IO_TARGET_STATE = 0;
-                pub const WdfIoTargetStarted:
-                    WDF_IO_TARGET_STATE = 1;
-                pub const WdfIoTargetStopped:
-                    WDF_IO_TARGET_STATE = 2;
-                pub const WdfIoTargetClosedForQueryRemove: WDF_IO_TARGET_STATE = 3;
-                pub const WdfIoTargetClosed:
-                    WDF_IO_TARGET_STATE = 4;
-                pub const WdfIoTargetDeleted:
-                    WDF_IO_TARGET_STATE = 5;
-                pub const WdfIoTargetPurged:
-                    WDF_IO_TARGET_STATE = 6;
-            }
-
-            pub mod _WDF_IO_TARGET_STATE {
-                pub type Type = ::core::ffi::c_int;
+                pub type Type = core::ffi::c_int;
                 pub const WdfIoTargetStateUndefined: Type = 0;
                 pub const WdfIoTargetStarted: Type = 1;
                 pub const WdfIoTargetStopped: Type = 2;
@@ -348,30 +626,30 @@ mod __runtime {
                 pub const WdfIoTargetDeleted: Type = 5;
                 pub const WdfIoTargetPurged: Type = 6;
             }
-            pub use self::_WDF_IO_TARGET_STATE::Type as WDF_IO_TARGET_STATE;
-            pub type PWDF_IO_TARGET_STATE = *mut wdk_sys::_WDF_IO_TARGET_STATE::Type;
+            pub type PWDF_IO_TARGET_STATE = *mut _WDF_IO_TARGET_STATE::Type;
             pub mod _WDF_IO_TARGET_OPEN_TYPE {
-                pub type Type = ::core::ffi::c_int;
-                pub const WdfIoTargetOpenUndefined: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 0;
-                pub const WdfIoTargetOpenUseExistingDevice: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 1;
-                pub const WdfIoTargetOpenByName: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 2;
-                pub const WdfIoTargetOpenReopen: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 3;
-                pub const WdfIoTargetOpenLocalTargetByFile: wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::Type = 4;
+                pub type Type = core::ffi::c_int;
+
+                pub const WdfIoTargetOpenUndefined: Type = 0;
+                pub const WdfIoTargetOpenUseExistingDevice: Type = 1;
+                pub const WdfIoTargetOpenByName: Type = 2;
+                pub const WdfIoTargetOpenReopen: Type = 3;
+                pub const WdfIoTargetOpenLocalTargetByFile: Type = 4;
             }
             pub use self::_WDF_IO_TARGET_OPEN_TYPE::Type as WDF_IO_TARGET_OPEN_TYPE;
             pub mod _WDF_IO_TARGET_SENT_IO_ACTION {
                 pub type Type = ::core::ffi::c_int;
-                pub const WdfIoTargetSentIoUndefined: wdk_sys::_WDF_IO_TARGET_SENT_IO_ACTION::Type = 0;
-                pub const WdfIoTargetCancelSentIo: wdk_sys::_WDF_IO_TARGET_SENT_IO_ACTION::Type = 1;
-                pub const WdfIoTargetWaitForSentIoToComplete: wdk_sys::_WDF_IO_TARGET_SENT_IO_ACTION::Type = 2;
-                pub const WdfIoTargetLeaveSentIoPending: wdk_sys::_WDF_IO_TARGET_SENT_IO_ACTION::Type = 3;
+                pub const WdfIoTargetSentIoUndefined: Type = 0;
+                pub const WdfIoTargetCancelSentIo: Type = 1;
+                pub const WdfIoTargetWaitForSentIoToComplete: Type = 2;
+                pub const WdfIoTargetLeaveSentIoPending: Type = 3;
             }
             pub use self::_WDF_IO_TARGET_SENT_IO_ACTION::Type as WDF_IO_TARGET_SENT_IO_ACTION;
             pub mod _WDF_IO_TARGET_PURGE_IO_ACTION {
                 pub type Type = ::core::ffi::c_int;
-                pub const WdfIoTargetPurgeIoUndefined: wdk_sys::_WDF_IO_TARGET_PURGE_IO_ACTION::Type = 0;
-                pub const WdfIoTargetPurgeIoAndWait: wdk_sys::_WDF_IO_TARGET_PURGE_IO_ACTION::Type = 1;
-                pub const WdfIoTargetPurgeIo: wdk_sys::_WDF_IO_TARGET_PURGE_IO_ACTION::Type = 2;
+                pub const WdfIoTargetPurgeIoUndefined: Type = 0;
+                pub const WdfIoTargetPurgeIoAndWait: Type = 1;
+                pub const WdfIoTargetPurgeIo: Type = 2;
             }
         }
     }
