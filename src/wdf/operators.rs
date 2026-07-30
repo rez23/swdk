@@ -894,7 +894,9 @@ mod _operators {
         }
     }
 
-    pub trait AsCtxDescriptor: Sized + Default {
+    pub unsafe trait AsCtxDescriptor:
+        Sized + Default
+    {
         /// A function that returns an optional `PCWDF_OBJECT_CONTEXT_TYPE_INFO`.
         ///
         /// This function is currently implemented to always return `None`.
@@ -909,8 +911,8 @@ mod _operators {
         /// let result = unique();
         /// assert!(result.is_none());
         /// ```
-        fn unique() -> Option<PCWDF_OBJECT_CONTEXT_TYPE_INFO>
-        {
+        fn descriptor()
+        -> Option<PCWDF_OBJECT_CONTEXT_TYPE_INFO> {
             None
         }
 
@@ -943,17 +945,96 @@ mod _operators {
         /// # Parameters
         /// - `obj`: A reference to an object of type `O`.
         ///
-        /// # Returns
-        /// An `Option<HandleRef<'_, Self>>`, which is always `None`.
-        ///
         /// # Notes
         /// - Currently, this function is effectively a placeholder and doesn't
         ///   utilize the passed parameter or perform any operations.
         #[allow(unused_variables)]
-        fn from_kernel<O>(
-            obj: &O,
-        ) -> Option<HandleRef<'_, Self>> {
+        fn from_kernel(
+            obj: &WDFOBJECT,
+        ) -> Option<NonNull<Self>> {
             None
+        }
+
+        fn initialize(obj: &WDFOBJECT) {
+            if let Some(mut ctx) = Self::from_kernel(obj) {
+                unsafe {
+                    ptr::write(
+                        ctx.as_mut(),
+                        Self::default(),
+                    )
+                }
+            }
+        }
+    }
+
+    pub trait AsWdfType<O: Copy>:
+        Sized + AsPtr<O> + AsRef<O> + Deref<Target = O>
+    {
+    }
+
+    /// Provides typed access to WDF object contexts associated with a kernel object.
+    ///
+    /// `AsWdfWithCtx` is implemented by WDF handle wrappers that can retrieve a typed
+    /// context object previously associated with the underlying WDF object.
+    ///
+    /// In KMDF, object contexts are attached to framework objects through
+    /// `WDF_OBJECT_ATTRIBUTES` and retrieved later through the corresponding
+    /// `WDF_OBJECT_CONTEXT_TYPE_INFO`. SWDK models this mechanism through
+    /// [`AsCtxDescriptor`] and exposes typed access through this trait.
+    ///
+    /// # Safety
+    ///
+    /// This trait is `unsafe` because implementing it means promising that the
+    /// wrapped WDF object is a valid object that may legally be used for typed
+    /// context retrieval.
+    ///
+    /// More specifically, an implementation must guarantee that:
+    ///
+    /// - The underlying WDF handle is valid and still owned by the framework;
+    /// - The handle refers to an object that supports WDF object contexts;
+    /// - The requested context type `C` was actually registered or allocated for
+    ///   that WDF object;
+    /// - `C::from_kernel(...)` returns a pointer to a valid instance of `C`;
+    /// - The returned context pointer is properly aligned and initialized;
+    /// - The returned context remains valid for at least the lifetime of `&self`;
+    /// - Creating a shared reference to the context does not violate Rust aliasing
+    ///   rules.
+    ///
+    /// `NonNull<C>` is not sufficient to prove these invariants. It only guarantees
+    /// that the pointer is not null. It does not prove that the pointed memory is a
+    /// valid WDF context of type `C`, nor that the memory is still alive or safely
+    /// borrowable as `&C`.
+    ///
+    /// # Provided Methods
+    ///
+    /// ## `get_ctx`
+    ///
+    /// Attempts to retrieve a typed WDF context associated with this object.
+    ///
+    /// ```rust
+    /// let ctx = device.get_ctx::<DeviceData>();
+    /// ```
+    ///
+    /// Returns:
+    ///
+    /// - `Some(HandleRef<'_, C>)` if a context pointer for `C` is available;
+    /// - `None` if the context cannot be retrieved.
+    ///
+    /// # Notes
+    ///
+    /// `get_ctx` is safe to call because the safety contract is placed on the
+    /// implementation.
+    pub unsafe trait AsWdfWithCtx<O: Copy>:
+        AsWdfObject<O>
+    {
+        fn ctx<C: AsCtxDescriptor>(
+            &self,
+        ) -> Option<HandleRef<'_, C>> {
+            let ctx = unsafe {
+                C::from_kernel(&self.as_wdf_object())?
+                    .as_ref()
+            };
+            Some(Handle::new(ctx))
         }
     }
 
