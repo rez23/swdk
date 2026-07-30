@@ -115,26 +115,6 @@ mod private {
         let (secs, millis) = filetime_100ns_to_unix_parts(timestamp());
         unix_secs_to_utc(secs, millis)
     }
-
-    #[must_use]
-    #[deprecated]
-    #[inline]
-    pub fn ntstatus_name(status: NTSTATUS) -> &'static str {
-        match status {
-            wdk_sys::STATUS_SUCCESS => "STATUS_SUCCESS",
-            wdk_sys::STATUS_UNSUCCESSFUL => "STATUS_UNSUCCESSFUL",
-            wdk_sys::STATUS_INVALID_PARAMETER => "STATUS_INVALID_PARAMETER",
-            wdk_sys::STATUS_INVALID_DEVICE_REQUEST => "STATUS_INVALID_DEVICE_REQUEST",
-            wdk_sys::STATUS_INSUFFICIENT_RESOURCES => "STATUS_INSUFFICIENT_RESOURCES",
-            wdk_sys::STATUS_OBJECT_NAME_COLLISION => "STATUS_OBJECT_NAME_COLLISION",
-            wdk_sys::STATUS_OBJECT_NAME_INVALID => "STATUS_OBJECT_NAME_INVALID",
-            wdk_sys::STATUS_ACCESS_DENIED => "STATUS_ACCESS_DENIED",
-            wdk_sys::STATUS_NOT_SUPPORTED => "STATUS_NOT_SUPPORTED",
-            wdk_sys::STATUS_DEVICE_NOT_READY => "STATUS_DEVICE_NOT_READY",
-            wdk_sys::STATUS_DELETE_PENDING => "STATUS_DELETE_PENDING",
-            _ => "UNKNOWN_NTSTATUS",
-        }
-    }
 }
 
 #[macro_export]
