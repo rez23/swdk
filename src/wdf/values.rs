@@ -60,7 +60,7 @@ mod _values {
 
 
     mod _impls {
-        use crate::rt::wdk_sys::WDF_IO_TARGET_STATE;
+        use crate::rt::wdk_sys::{WDF_IO_TARGET_STATE, _WDF_IO_TARGET_OPEN_TYPE};
         use crate::rt::wdk_sys::_WDF_IO_TARGET_STATE::{
             WdfIoTargetClosed,
             WdfIoTargetClosedForQueryRemove,
@@ -108,11 +108,11 @@ mod _values {
         impl From<c_int> for WdfIoTargetOpenType {
             fn from(value: c_int) -> Self {
                 match value {
-                    wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenUndefined => Self::Undefined,
-                    wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenByName => Self::ByName,
-                    wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenReopen => Self::Reopen,
-                    wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenLocalTargetByFile => Self::LocalTargetByFile,
-                    wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenUseExistingDevice => Self::UseExistingDevice,
+                    _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenUndefined => Self::Undefined,
+                    _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenByName => Self::ByName,
+                    _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenReopen => Self::Reopen,
+                    _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenLocalTargetByFile => Self::LocalTargetByFile,
+                    _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenUseExistingDevice => Self::UseExistingDevice,
                     _ => Self::Unknown(value),
                 }
             }
@@ -120,11 +120,11 @@ mod _values {
         impl From<WdfIoTargetOpenType> for c_int {
             fn from(value: WdfIoTargetOpenType) -> Self {
                 match value {
-                    WdfIoTargetOpenType::Undefined => wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenUndefined,
-                    WdfIoTargetOpenType::ByName => wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenByName,
-                    WdfIoTargetOpenType::Reopen => wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenReopen,
-                    WdfIoTargetOpenType::LocalTargetByFile => wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenLocalTargetByFile,
-                    WdfIoTargetOpenType::UseExistingDevice => wdk_sys::_WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenUseExistingDevice,
+                    WdfIoTargetOpenType::Undefined => _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenUndefined,
+                    WdfIoTargetOpenType::ByName => _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenByName,
+                    WdfIoTargetOpenType::Reopen => _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenReopen,
+                    WdfIoTargetOpenType::LocalTargetByFile => _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenLocalTargetByFile,
+                    WdfIoTargetOpenType::UseExistingDevice => _WDF_IO_TARGET_OPEN_TYPE::WdfIoTargetOpenUseExistingDevice,
                     WdfIoTargetOpenType::Unknown(val) => val,
                 }
             }
