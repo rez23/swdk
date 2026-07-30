@@ -161,6 +161,18 @@ mod private {
 
         #[cfg(feature = "minimal-runtime")]
         mod _kmdf {
+            mod _wdfhandle {
+                use crate::rt::wdk_sys::HANDLE;
+
+                use crate::Handle;
+                use crate::op::{AsRaw, AsWdfHandle};
+
+                unsafe impl AsWdfHandle<HANDLE> for Handle {
+                    fn as_wdf_handle(&self) -> HANDLE {
+                        self.raw()
+                    }
+                }
+            }
             mod _wdfobject {
                 use core::ptr;
 
