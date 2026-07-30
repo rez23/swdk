@@ -40,6 +40,7 @@ mod private {
     }
 }
 
+#[cfg(feature = "kmdf-runtime")]
 mod __ntstatus {
     include!(concat!(env!("OUT_DIR"), "/ntstatus.rs"));
 }
