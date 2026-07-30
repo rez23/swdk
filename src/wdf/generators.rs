@@ -80,93 +80,14 @@ macro_rules! size_to_ulong {
     }};
 }
 
-/// A macro for handling NTSTATUS error codes and optionally logging an error message.
-///
-/// This macro checks if the provided status code is negative (indicative of an error) and performs
-/// one of the following actions based on the supplied arguments:
-/// - Without a message: Directly returns the status if it's an error.
-/// - With a message: Logs the error message, interprets the NTSTATUS code description, and returns the status.
-///
-/// # Usage
-///
-/// - Pass only the status code to quickly handle errors without logging:
-/// ```
-/// let status = some_function_returning_status();
-/// if_nterror_return!(status);
-/// ```
-///
-/// - Pass both the status code and a message to log the error before handling:
-/// ```
-/// let status = some_function_returning_status();
-/// if_nterror_return!(status, "An error occurred");
-/// ```
-///
-/// # Parameters
-///
-/// - `$status:expr`: The NTSTATUS code to check. If it's less than 0 (error), the macro will trigger a return.
-/// - `$message:literal` (optional): A literal string describing the context of the error, which will be logged if an error is detected.
-///
-/// # Behavior
-///
-/// - If the provided status is an error (negative value):
-///   - In the single-argument variant: Returns the status immediately.
-///   - In the two-argument variant: Logs the error message along with the NTSTATUS code and its description, then returns the status.
-/// - If the status is not negative (success or informational):
-///   - Returns the status without any action.
-///
-/// # Example
-///
-/// ```rust
-/// use some_crate::if_nterror_return;
-///
-/// fn example_function() -> i32 {
-///     let status = -1; // Simulated NTSTATUS error
-///
-///     if_nterror_return!(status, "Failed to execute example_function");
-///
-///     // Code here won't execute if `status` is an error
-///     0
-/// }
-/// ```
-///
-/// In the example above, if the `status` is negative, the macro logs the error and returns the status.
-/// Otherwise, the function continues executing normally.
-///
-/// # Notes
-///
-/// This macro assumes the presence of a logging utility (such as `$crate::error!`) and a utility
-/// function `$crate::utils::helpers::ntstatus_name` for resolving the symbolic name of an NTSTATUS code.
-///
-/// # Errors
-///
-/// - Returns control out of the calling function with the provided error status when an error is detected.
 #[macro_export]
-macro_rules! if_nterror_return {
-    ($status:expr) => {{
-            let status = $status;
+macro_rules! function_name {
+    () => {{
+        fn f() {}
+        let name = core::any::type_name_of_val(&f);
 
-            if status < 0 {
-                return status;
-            }
-
-            status
-        }};
-
-    ($status:expr, $message:literal) => {{
-            let status = $status;
-
-            if status < 0 {
-                $crate:error!(
-                    "{}: {} ({:#x})",
-                    $message,
-                    $crate::utils::helpers::ntstatus_name(status),
-                    status
-                );
-                return status;
-            }
-
-            status
-        }};
+        &name[..name.len() - 3]
+    }};
 }
 
 /// A macro to simplify error handling by evaluating an expression that returns a `Result` and
@@ -246,60 +167,43 @@ macro_rules! if_nterror_return_ntstatus {
     ($expr:expr) => {{
         match $expr {
             Ok(value) => value,
-            Err(ntstatus) => {
-                return ntstatus
-            }
-        }
-    }};
-    (log_err, $expr:expr, $message:literal) => {{
-        match $expr {
-            Ok(value) => value,
-            Err(status_err) => {
-                $crate:error!(
-                    "{} with STATUS: {:?}",
-                    $message,
-                    status_err,
-                );
-                return STATUS_UNSUCCESSFUL
-            }
+            Err(ntstatus) => return ntstatus,
         }
     }};
 
-    ($result:expr, $message:literal) => {{
+    ($result:expr,as_error,msg = $msg:literal) => {{
         match $result {
             Ok(value) => value,
             Err(ntstatus) => {
-                $crate:error!(
-                    "{} with STATUS: {:?}",
-                    $message,
-                    ntstatus,
-                );
+                let status = ntstatus.fmt_status();
+                let hex = ntstatus.fmt_hex();
 
+                $crate::error!(
+                    "Failure happens in '{}' with status '{}({})': '{}'",
+                    $crate::function_name!(),
+                    status,
+                    hex,
+                    $msg,
+                );
                 return ntstatus;
             }
         }
     }};
 
-    ($result:expr, $ntstatus:expr) => {{
+    ($result:expr,as_error) => {{
         match $result {
             Ok(value) => value,
-            Err(_) => {
-                return $ntstatus;
-            }
-        }
-    }};
+            Err(ntstatus) => {
+                let status = ntstatus.fmt_status();
+                let hex = ntstatus.fmt_hex();
 
-    ($result:expr, $ntstatus:expr, $message:literal) => {{
-        match $result {
-            Ok(value) => value,
-            Err(_) => {
-                $crate:error!(
-                    "{} with status {}",
-                    $message,
-                    $ntstatus,
+                $crate::error!(
+                    "Failure happens in '{}' with status '{}({})'",
+                    $crate::function_name!(),
+                    status,
+                    hex,
                 );
-
-                return $ntstatus;
+                return ntstatus;
             }
         }
     }};
