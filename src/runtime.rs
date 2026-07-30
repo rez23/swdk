@@ -317,6 +317,7 @@ mod __runtime {
             //
 
             pub(crate) const STATUS_INVALID_PARAMETER: NTSTATUS = 0xC000000Du32 as i32;
+            pub(crate) const STATUS_INTERNAL_ERROR: NTSTATUS = 0xC000000Eu32 as i32;
             pub(crate) type PWDF_IO_TARGET_OPEN_PARAMS = *mut c_void;
             pub type HANDLE = *mut c_void;
             pub type PVOID = *mut c_void;
@@ -333,23 +334,23 @@ mod __runtime {
             //
 
             #[repr(C)]
-            pub struct _DRIVER_OBJECT {
+            pub struct DRIVER_OBJECT__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _DEVICE_OBJECT {
+            pub struct DEVICE_OBJECT__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _IRP {
+            pub struct IRP__ {
                 _priv: [u8; 0],
             }
 
-            pub type PDRIVER_OBJECT = *mut _DRIVER_OBJECT;
-            pub type PDEVICE_OBJECT = *mut _DEVICE_OBJECT;
-            pub type PIRP = *mut _IRP;
+            pub type PDRIVER_OBJECT = *mut DRIVER_OBJECT__;
+            pub type PDEVICE_OBJECT = *mut DEVICE_OBJECT__;
+            pub type PIRP = *mut IRP__;
 
             //
             // DEVICE_INIT
@@ -367,59 +368,59 @@ mod __runtime {
             //
 
             #[repr(C)]
-            pub struct _WDFOBJECT {
+            pub struct WDFOBJECT__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _WDFDEVICE {
+            pub struct WDFDEVICE__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _WDFDRIVER {
+            pub struct WDFDRIVER__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _WDFMEMORY {
+            pub struct WDFMEMORY__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _WDFREQUEST {
+            pub struct WDFREQUEST__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _WDFQUEUE {
+            pub struct WDFQUEUE__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _WDFIOTARGET {
+            pub struct WDFIOTARGET__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _WDFCOLLECTION {
+            pub struct WDFCOLLECTION__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
-            pub struct _WDFSTRING {
+            pub struct WDFSTRING__ {
                 _priv: [u8; 0],
             }
 
-            pub type WDFOBJECT = *mut _WDFOBJECT;
-            pub type WDFDEVICE = *mut _WDFDEVICE;
-            pub type WDFDRIVER = *mut _WDFDRIVER;
-            pub type WDFMEMORY = *mut _WDFMEMORY;
-            pub type WDFREQUEST = *mut _WDFREQUEST;
-            pub type WDFQUEUE = *mut _WDFQUEUE;
-            pub type WDFIOTARGET = *mut _WDFIOTARGET;
-            pub type WDFCOLLECTION = *mut _WDFCOLLECTION;
-            pub type WDFSTRING = *mut _WDFSTRING;
+            pub type WDFOBJECT = *mut WDFOBJECT__;
+            pub type WDFDEVICE = *mut WDFDEVICE__;
+            pub type WDFDRIVER = *mut WDFDRIVER__;
+            pub type WDFMEMORY = *mut WDFMEMORY__;
+            pub type WDFREQUEST = *mut WDFREQUEST__;
+            pub type WDFQUEUE = *mut WDFQUEUE__;
+            pub type WDFIOTARGET = *mut WDFIOTARGET__;
+            pub type WDFCOLLECTION = *mut WDFCOLLECTION__;
+            pub type WDFSTRING = *mut WDFSTRING__;
 
             pub const WDF_NO_HANDLE: HANDLE =
                 core::ptr::null_mut();
@@ -664,7 +665,7 @@ mod __runtime {
         use crate::ioctl::commands::IoCtlCommand;
         use crate::op::NtResult;
         use core::ffi::c_void;
-        use wdk_sys::{call_unsafe_wdf_function_binding, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_IO_QUEUE_CONFIG, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_PNPPOWER_EVENT_CALLBACKS, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, WDFQUEUE};
+        use wdk_sys::{call_unsafe_wdf_function_binding, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_IO_QUEUE_CONFIG, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_PNPPOWER_EVENT_CALLBACKS, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, WDFQUEUE, BOOLEAN, WDF_REQUEST_SEND_OPTIONS, NTSTATUS};
 
         #[inline]
         pub unsafe fn wdf_driver_create(
@@ -718,7 +719,7 @@ mod __runtime {
         }
 
         #[inline]
-        pub unsafe fn wdf_request_send_async(
+        pub unsafe fn wdf_target_io_send_ioctl_sync(
             io_target: WDFIOTARGET,
             io_ctl_command: IoCtlCommand,
             wdf_request: WDFREQUEST,
@@ -811,7 +812,28 @@ mod __runtime {
                 callbacks,
             );
         }
-        
+        #[inline]
+        pub unsafe fn wdf_io_queue_get_device(
+            queue: WDFQUEUE
+        ) -> WDFDEVICE {
+            call_unsafe_wdf_function_binding!(
+                WdfIoQueueGetDevice,
+                queue,
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_request_complete(
+            request: WDFREQUEST,
+            status: NTSTATUS
+        ) {
+            call_unsafe_wdf_function_binding!(
+                WdfRequestComplete,
+                request,
+                status,
+            )
+        }
+
         #[inline]
         pub unsafe fn wdf_io_queue_create(
             device: WDFDEVICE,
@@ -826,6 +848,31 @@ mod __runtime {
                 attrs,
                 queue,
             )
+        }
+
+        pub unsafe fn wdf_device_get_io_queue(
+            queue: WDFQUEUE
+        ) -> WDFDEVICE {
+            call_unsafe_wdf_function_binding!(
+                WdfIoQueueGetDevice,
+                queue,
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_request_send(
+            device: WDFDEVICE,
+            target: WDFIOTARGET,
+            queue: WDFQUEUE,
+            options: PWDF_REQUEST_SEND_OPTIONS,
+            request: WDFREQUEST
+        ) -> bool {
+            call_unsafe_wdf_function_binding!(
+                WdfRequestSend,
+                request,
+                target,
+                options
+            ) != 0
         }
 
     }
