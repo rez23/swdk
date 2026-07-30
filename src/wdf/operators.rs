@@ -141,6 +141,16 @@ mod _operators {
         }
     }
 
+    pub unsafe trait AsWdfObject<O: Copy>: AsWdfHandle<O> {
+        fn as_wdf_object(&self) -> WDFOBJECT {
+            self.as_wdf_handle().cast()
+        }
+    }
+
+    pub unsafe trait AsWdfHandle<H: Copy>: AsWdfType<H> {
+        fn as_wdf_handle(&self) -> HANDLE;
+    }
+
     /// A trait that extends [`AsPtr`] and [`AsMut`] to provide functionality for obtaining
     /// and using mutable raw pointers to the underlying data.
     ///
