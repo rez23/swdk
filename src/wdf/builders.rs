@@ -144,8 +144,8 @@ pub struct WdfDevicePnpPowerSetup {
 pub struct WdfIoQueueConfig {
     pub dispatch_type: WDF_IO_QUEUE_DISPATCH_TYPE,
     pub power_managed: WDF_TRI_STATE,
-    pub allow_zero_length_requests: BOOLEAN,
-    pub default_queue: BOOLEAN,
+    pub allow_zero_length_requests: bool,
+    pub default_queue: bool,
     pub on_io_default: PFN_WDF_IO_QUEUE_IO_DEFAULT,
     pub on_io_read: PFN_WDF_IO_QUEUE_IO_READ,
     pub on_io_write: PFN_WDF_IO_QUEUE_IO_WRITE,
@@ -166,10 +166,12 @@ impl AsBuilder for WdfIoQueueConfig {
     fn build(&self) -> Self::Descriptor<'_> {
         WDF_IO_QUEUE_CONFIG {
             Size: const_size_to_ulong!(WDF_IO_QUEUE_CONFIG),
-            DispatchType: 0,
-            PowerManaged: 0,
-            AllowZeroLengthRequests: 0,
-            DefaultQueue: 0,
+            DispatchType: self.dispatch_type,
+            PowerManaged: self.power_managed,
+            AllowZeroLengthRequests: self
+                .allow_zero_length_requests
+                as BOOLEAN,
+            DefaultQueue: self.default_queue as BOOLEAN,
             EvtIoDefault: self.on_io_default,
             EvtIoRead: self.on_io_read,
             EvtIoWrite: self.on_io_write,
