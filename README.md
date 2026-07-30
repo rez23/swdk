@@ -2,16 +2,29 @@
 > ###### This is a highly experimental project in a very early stage of development.
 > ###### Contributions are welcome, but if you submit PR may be some time for the approval
 
-**swdk** is middleware for the Windows Driver Framework (WDF) designed to provide a safe, idiomatic, and expressive 
+**swdk** is middleware for the Windows Driver Framework (WDF) designed to provide a safe, idiomatic and expressive 
 way to write Windows kernel drivers in Rust, with a current focus on KMDF.
 
-**swdk** is not a wrapper around a specific WDF runtime or some sorta of utility crate for WDF.  
-Rather than hiding WDF callbacks behind a higher-level, object-oriented abstraction, swdk defines a compact set of Rust 
-rules that describe how the Rust compiler should handle WDF operations, data types, resources, etc.
+**swdk** was built, for now, primary around KMDF, but is not designed around a specific WDF framework or other.  
+Rather than wrapping WDF callbacks and framework features behind a higher-level, object-oriented abstraction, 
+SWDK defines a compact set of Rust traits, types and capabilities that describe how WDF resources, operations and
+relationships are represented within Rust. 
 
-In this sense, swdk does not aim to cover every WDF feature. Instead, it provides a Rust-to-WDF meta-binding that, 
-as a result, permits you to write Windows drivers as a set of rules applied directly to the raw data types exposed by WDF.
+In this sense, *SWDK* does not merely wrap WDF handles in a Rust-friendly and idiomatic way.  
+It shifts the focus from individual WDF callbacks to the **modeling of WDF relationships**.
+Instead of treating framework operations as isolated function calls, SWDK exposes the relationships between WDF resources as Rust types, trait bounds and composable capabilities. 
 
+This allows driver authors to express, at compile time, what WDF will do at runtime:
+
+- a driver creates a device;
+- a device owns queues and I/O targets;
+- a WDF object carries typed context data;
+- a descriptor configures how a framework object is created;
+- a request flows through a queue and can be inspected, completed or forwarded.
+
+Traits such as `AsWdfOwner`, `AsWdfOwned`, `AsCtxDescriptor` and `AsBuilder` are therefore not just helpers.
+
+They are the formal operators of SWDK’s meta-WDF language: they describe how WDF resources relate to each other and expose those relationships to the Rust compiler.
 
 # A brief example
 
@@ -216,7 +229,7 @@ The result remains recognizably KMDF, while shifting the focus from imperative d
 
 ### Zero-cost
 
-swdk relies heavily on Rust generics, trait implementations, and static dispatch. As a result, most abstractions provided by the framework exist only at compile time.
+swdk relies heavily on Rust generics, trait implementations and static dispatch. As a result, most abstractions provided by the framework exist only at compile time.
 
 Types such as:
 
@@ -244,7 +257,7 @@ In practice, most abstractions compile down to:
 without introducing additional runtime layers.
 # Additional resources
 
-For more information about the Windows Driver Framework, KMDF, and the official Rust WDK project, see:
+For more information about the Windows Driver Framework, KMDF and the official Rust WDK project, see:
 
 - [windows-drivers-rs](https://github.com/microsoft/windows-drivers-rs)
 - [swdk official repository](https://github.com/rez23/swdk)
