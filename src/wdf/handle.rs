@@ -112,8 +112,8 @@ mod private {
         use core::ops::Deref;
 
         use crate::op::{
-            AsPtr, AsRaw, AsRawWithBorrow, IntoInner,
-            IntoRaw,
+            AsPtr, AsRaw, AsRawWithBorrow,
+            AsWdfType, IntoInner, IntoRaw,
         };
         use crate::{Handle, HandleRef};
 
