@@ -179,13 +179,13 @@ mod private {
                 use crate::Handle;
                 use crate::bd::WdfObjAttrs;
                 use crate::op::{
-                    AsBuilder, AsCtxDescriptor, AsWdfOwner,
-                    NtResult,
+                    AsBuilder, AsCtxDescriptor, AsWdfObject, AsWdfOwner,
+                    AsWdfWithCtx, NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
-                use crate::rt::wdk_sys::{
-                    WDF_NO_HANDLE, WDFOBJECT,
+                use crate::rt::wdk_sys::{WDFOBJECT,
+                                         WDF_NO_HANDLE,
                 };
 
                 impl Handle<WDFOBJECT> {
