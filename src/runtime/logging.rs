@@ -125,7 +125,7 @@ macro_rules! logger_name {
 #[macro_export]
 macro_rules! error {
     ($($arg:tt)*) => {{
-        swdk::println!(
+        ::swdk::println!(
             "{}[{}][error]: {} in {}:{} at line {}",
             $crate::logger_name!(),
             ::swdk::rt::logging::timestamp_utc(),
@@ -140,7 +140,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! info {
     ($($arg:tt)*) => {{
-        swdk::println!(
+        ::swdk::println!(
             "{}[{}][info]: {}",
             $crate::logger_name!(),
             $crate::rt::logging::timestamp_utc(),
@@ -153,7 +153,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {{
-        swdk::println!(
+        ::swdk::println!(
             "{}[{}][debug]: {}",
             $crate::logger_name!(),
             ::swdk::rt::logging::timestamp_utc(),
@@ -171,7 +171,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! warn {
     ($($arg:tt)*) => {{
-        wdk::println!(
+        ::swdk::println!(
             "{}[{}][warn]: {} in {}:{}",
             $crate::logger_name!(),
             ::swdk::rt::logging::timestamp_utc(),
