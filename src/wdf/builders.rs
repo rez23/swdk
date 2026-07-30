@@ -149,19 +149,23 @@ pub struct WdfIoQueueConfig {
     pub on_io_default: PFN_WDF_IO_QUEUE_IO_DEFAULT,
     pub on_io_read: PFN_WDF_IO_QUEUE_IO_READ,
     pub on_io_write: PFN_WDF_IO_QUEUE_IO_WRITE,
-    pub on_io_device_control: PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL,
-    pub on_io_internal_device_control: PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL,
+    pub on_io_device_control:
+        PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL,
+    pub on_io_internal_device_control:
+        PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL,
     pub on_io_stop: PFN_WDF_IO_QUEUE_IO_STOP,
     pub on_io_resume: PFN_WDF_IO_QUEUE_IO_RESUME,
-    pub on_io_canceled_on_queue: PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE,
+    pub on_io_canceled_on_queue:
+        PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE,
     pub settings: _WDF_IO_QUEUE_CONFIG__bindgen_ty_1,
     pub driver: WDFDRIVER,
 }
 
 impl AsBuilder for WdfIoQueueConfig {
-    type Descriptor<'a> = WDF_IO_QUEUE_CONFIG
-        where
-            Self: 'a;
+    type Descriptor<'a>
+        = WDF_IO_QUEUE_CONFIG
+    where
+        Self: 'a;
 
     fn build(&self) -> Self::Descriptor<'_> {
         WDF_IO_QUEUE_CONFIG {
@@ -176,10 +180,12 @@ impl AsBuilder for WdfIoQueueConfig {
             EvtIoRead: self.on_io_read,
             EvtIoWrite: self.on_io_write,
             EvtIoDeviceControl: self.on_io_device_control,
-            EvtIoInternalDeviceControl: self.on_io_internal_device_control,
+            EvtIoInternalDeviceControl: self
+                .on_io_internal_device_control,
             EvtIoStop: self.on_io_stop,
             EvtIoResume: self.on_io_resume,
-            EvtIoCanceledOnQueue: self.on_io_canceled_on_queue,
+            EvtIoCanceledOnQueue: self
+                .on_io_canceled_on_queue,
             Settings: Default::default(),
             Driver: WDFDRIVER::default(),
         }
