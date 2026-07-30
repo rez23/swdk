@@ -112,8 +112,8 @@ mod private {
         use core::ops::Deref;
 
         use crate::op::{
-            AsPtr, AsRaw, AsRawWithBorrow,
-            AsWdfType, IntoInner, IntoRaw,
+            AsPtr, AsRaw, AsRawWithBorrow, AsWdfType,
+            IntoInner, IntoRaw,
         };
         use crate::{Handle, HandleRef};
 
@@ -145,14 +145,12 @@ mod private {
         unsafe impl<H> Sync for Handle<H> {}
         impl<H: Copy> IntoRaw<H> for Handle<H> {}
         impl<H: Copy> AsRaw<H> for Handle<H> {}
-
         impl<'a, H> Borrow<H> for HandleRef<'a, H> {
             fn borrow(&self) -> &H {
                 self.0
             }
         }
         impl<'a, H: Copy> AsRawWithBorrow<H> for HandleRef<'a, H> {}
-
         impl<'a, H: Copy> HandleRef<'a, H> {
             pub fn raw(&self) -> H {
                 *self.0
@@ -162,10 +160,9 @@ mod private {
         #[cfg(feature = "minimal-runtime")]
         mod _kmdf {
             mod _wdfhandle {
-                use crate::rt::wdk_sys::HANDLE;
-
                 use crate::Handle;
                 use crate::op::{AsRaw, AsWdfHandle};
+                use crate::rt::wdk_sys::HANDLE;
 
                 unsafe impl AsWdfHandle<HANDLE> for Handle {
                     fn as_wdf_handle(&self) -> HANDLE {
@@ -179,20 +176,24 @@ mod private {
                 use crate::Handle;
                 use crate::bd::WdfObjAttrs;
                 use crate::op::{
-                    AsBuilder, AsCtxDescriptor, AsWdfObject, AsWdfOwner,
-                    AsWdfWithCtx, NtResult,
+                    AsBuilder, AsCtxDescriptor,
+                    AsWdfObject, AsWdfOwner, AsWdfWithCtx,
+                    NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
-                use crate::rt::wdk_sys::{WDFOBJECT,
-                                         WDF_NO_HANDLE,
+                use crate::rt::wdk_sys::{
+                    WDF_NO_HANDLE, WDFOBJECT,
                 };
 
                 #[cfg(feature = "kmdf-runtime")]
                 unsafe impl AsWdfObject<WDFOBJECT> for Handle<WDFOBJECT> {}
 
                 impl Handle<WDFOBJECT> {
-                    pub fn allocate(attrs: Option<WdfObjAttrs>) -> NtResult<Self> {
+                    pub fn allocate(
+                        attrs: Option<WdfObjAttrs>,
+                    ) -> NtResult<Self>
+                    {
                         Self::allocate_from_owned(
                             (),
                             None,
@@ -209,15 +210,18 @@ mod private {
                         _: Self::Owned,
                         _: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
-                    ) -> NtResult<Self> where
-                            D: AsCtxDescriptor,
+                    ) -> NtResult<Self>
+                    where
+                        D: AsCtxDescriptor,
                     {
                         let mut obj = WDF_NO_HANDLE.cast();
-                        let mut attrs = attrs.map(|a| a.build());
-                        let attrs_ptr = attrs.as_mut().map_or(
-                            ptr::null_mut(),
-                            ptr::from_mut,
-                        );
+                        let mut attrs =
+                            attrs.map(|a| a.build());
+                        let attrs_ptr =
+                            attrs.as_mut().map_or(
+                                ptr::null_mut(),
+                                ptr::from_mut,
+                            );
 
                         #[cfg(feature = "kmdf-runtime")]
                         unsafe {
@@ -229,7 +233,7 @@ mod private {
                         Ok(Handle::new(obj))
                     }
                 }
-                
+
                 #[cfg(feature = "kmdf-runtime")]
                 unsafe impl AsWdfWithCtx<WDFOBJECT> for Handle<WDFOBJECT> {}
             }
@@ -239,16 +243,23 @@ mod private {
                 use crate::Handle;
                 use crate::bd::WdfObjAttrs;
                 use crate::op::{
-                    AsBuilder, AsCtxDescriptor, AsWdfOwner,
-                    NtResult,
+                    AsBuilder, AsCtxDescriptor, AsRaw,
+                    AsWdfHandle, AsWdfObject, AsWdfOwner,
+                    AsWdfWithCtx, NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
-                    PWDFDEVICE_INIT, WDF_NO_HANDLE,
+                    HANDLE, PWDFDEVICE_INIT, WDF_NO_HANDLE,
                     WDFDEVICE,
                 };
 
+                unsafe impl AsWdfHandle<WDFDEVICE> for Handle<WDFDEVICE> {
+                    fn as_wdf_handle(&self) -> HANDLE {
+                        self.raw().cast()
+                    }
+                }
+                unsafe impl AsWdfObject<WDFDEVICE> for Handle<WDFDEVICE> {}
                 impl AsWdfOwner<WDFDEVICE> for Handle<WDFDEVICE> {
                     type Conf = ();
                     type Owned = PWDFDEVICE_INIT;
@@ -257,20 +268,25 @@ mod private {
                         owned: Self::Owned,
                         _: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
-                    ) -> NtResult<Self> where
-                            D: AsCtxDescriptor,
+                    ) -> NtResult<Self>
+                    where
+                        D: AsCtxDescriptor,
                     {
-                        let mut device: WDFDEVICE = WDF_NO_HANDLE.cast();
-                        let mut attrs = attrs.map(|a| a.build());
+                        let mut device: WDFDEVICE =
+                            WDF_NO_HANDLE.cast();
+                        let mut attrs =
+                            attrs.map(|a| a.build());
 
                         let mut pdev_init = owned;
 
-                        let attrs_ptr = attrs.as_mut().map_or(
-                            ptr::null_mut(),
-                            ptr::from_mut,
-                        );
+                        let attrs_ptr =
+                            attrs.as_mut().map_or(
+                                ptr::null_mut(),
+                                ptr::from_mut,
+                            );
 
-                        let dev_init_ptr = &raw mut pdev_init;
+                        let dev_init_ptr =
+                            &raw mut pdev_init;
                         let device_ptr = &raw mut device;
 
                         #[cfg(feature = "kmdf-runtime")]
@@ -283,9 +299,14 @@ mod private {
                             )
                         }?;
 
+                        // If CtxDescriptor exists, allocate and initialize
+                        D::initialize(&device.cast());
                         Ok(Self::new(device))
                     }
                 }
+
+                unsafe impl AsWdfWithCtx<WDFDEVICE> for Handle<WDFDEVICE> {}
+
                 impl Handle<WDFDEVICE> {
                     /// Creates a new instance of the object from an owned `PWDFDEVICE_INIT` with optional attributes.
                     ///
@@ -336,13 +357,12 @@ mod private {
                     pub fn allocate<D>(
                         owner: PWDFDEVICE_INIT,
                         attrs: Option<WdfObjAttrs<D>>,
-                    ) -> NtResult<Self> where
-                            D: AsCtxDescriptor,
+                    ) -> NtResult<Self>
+                    where
+                        D: AsCtxDescriptor,
                     {
                         Self::allocate_from_owned::<D>(
-                            owner,
-                            None,
-                            attrs,
+                            owner, None, attrs,
                         )
                     }
                 }
@@ -350,13 +370,12 @@ mod private {
             mod _pdevice_init {
                 use core::ptr;
 
-                use wdk_sys::PWDFDEVICE_INIT;
-
                 use crate::HandleRef;
                 use crate::bd::WdfDevicePnpPowerSetup;
                 use crate::op::AsBuilder;
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
+                use crate::rt::wdk_sys::PWDFDEVICE_INIT;
 
                 impl<'a> HandleRef<'a, PWDFDEVICE_INIT> {
                     #[inline]
@@ -390,7 +409,7 @@ mod private {
 
             mod _wdfdriver {
                 use core::ptr;
-                use wdk_sys::STATUS_INVALID_PARAMETER;
+
                 use crate::Handle;
                 use crate::bd::{
                     WdfDriverConf, WdfObjAttrs,
@@ -402,8 +421,9 @@ mod private {
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
-                    PDRIVER_OBJECT, WDF_NO_HANDLE,
-                    WDFDRIVER,
+                    PDRIVER_OBJECT,
+                    STATUS_INVALID_PARAMETER,
+                    WDF_NO_HANDLE, WDFDRIVER,
                 };
 
                 impl AsWdfOwner<WDFDRIVER> for Handle<WDFDRIVER> {
@@ -414,11 +434,14 @@ mod private {
                         owner: Self::Owned,
                         conf: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
-                    ) -> NtResult<Self> where
-                            D: AsCtxDescriptor,
+                    ) -> NtResult<Self>
+                    where
+                        D: AsCtxDescriptor,
                     {
-                        let mut driver: WDFDRIVER = WDF_NO_HANDLE.cast();
-                        let mut attrs = attrs.map(|a| a.build());
+                        let mut driver: WDFDRIVER =
+                            WDF_NO_HANDLE.cast();
+                        let mut attrs =
+                            attrs.map(|a| a.build());
                         let conf = conf.ok_or({
                             STATUS_INVALID_PARAMETER
                         })?;
@@ -428,12 +451,14 @@ mod private {
                             .ok_or(STATUS_INVALID_PARAMETER)?
                             .as_ptr();
 
-                        let attrs_ptr = attrs.as_mut().map_or(
-                            ptr::null_mut(),
-                            ptr::from_mut,
-                        );
+                        let attrs_ptr =
+                            attrs.as_mut().map_or(
+                                ptr::null_mut(),
+                                ptr::from_mut,
+                            );
 
-                        let registry_path = conf.registry_path;
+                        let registry_path =
+                            conf.registry_path;
                         let config_ptr = &raw mut config;
                         let driver_ptr = &raw mut driver;
 
@@ -456,9 +481,14 @@ mod private {
                     pub fn allocate(
                         p_driver_obj: PDRIVER_OBJECT,
                         conf: WdfDriverConf,
-                        attrs: Option<WdfObjAttrs>
-                    ) -> NtResult<Self> {
-                        Self::allocate_from_owned(p_driver_obj, Some(conf), attrs)
+                        attrs: Option<WdfObjAttrs>,
+                    ) -> NtResult<Self>
+                    {
+                        Self::allocate_from_owned(
+                            p_driver_obj,
+                            Some(conf),
+                            attrs,
+                        )
                     }
                 }
             }
@@ -466,14 +496,15 @@ mod private {
                 #[cfg(feature = "kmdf-runtime")]
                 use core::ptr;
 
-                use wdk_sys::{PWDF_IO_TARGET_OPEN_PARAMS, STATUS_INVALID_PARAMETER, WDF_NO_HANDLE};
-
                 use crate::Handle;
                 use crate::bd::WdfObjAttrs;
                 use crate::ioctl::{
                     IoCtlRequest, IoCtlResponse,
                 };
-                use crate::op::{AsBuilder, AsBuilderMut, AsWdfFromOwner, AsWdfOwned, NtResult};
+                use crate::op::{
+                    AsBuilder, AsBuilderMut,
+                    AsWdfFromOwner, AsWdfOwned, NtResult,
+                };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::op::{AsOptionalBuff, AsRaw};
                 #[cfg(feature = "kmdf-runtime")]
@@ -481,7 +512,9 @@ mod private {
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::wdk_sys::STATUS_UNSUCCESSFUL;
                 use crate::rt::wdk_sys::{
-                    ULONG_PTR, WDFDEVICE, WDFIOTARGET,
+                    PWDF_IO_TARGET_OPEN_PARAMS,
+                    STATUS_INVALID_PARAMETER, ULONG_PTR,
+                    WDF_NO_HANDLE, WDFDEVICE, WDFIOTARGET,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::runtime::kmdf::{
@@ -500,12 +533,17 @@ mod private {
                 impl Handle<WDFIOTARGET> {
                     pub fn allocate_default(
                         owner: &WDFDEVICE,
-                    ) -> NtResult<Self> {
+                    ) -> NtResult<Self>
+                    {
                         #[cfg(feature = "kmdf-runtime")]
                         {
-                            let device = ptr::NonNull::new(*owner)
-                                .ok_or(STATUS_INVALID_PARAMETER)?
-                                .as_ptr();
+                            let device = ptr::NonNull::new(
+                                *owner,
+                            )
+                            .ok_or(
+                                STATUS_INVALID_PARAMETER,
+                            )?
+                            .as_ptr();
 
                             let io_target = unsafe {
                                 __cb::wdf_target_io_get(
@@ -537,25 +575,35 @@ mod private {
                     type Owner = WDFDEVICE;
                     type Conf = ();
 
-                    #[cfg_attr(feature = "test-runtime",
-                        expect(unused_variables,
-                            reason = "Unused because of test-runtime"))]
+                    #[cfg_attr(
+                        feature = "test-runtime",
+                        expect(
+                            unused_variables,
+                            reason = "Unused because of test-runtime"
+                        )
+                    )]
                     fn allocate_from_owner(
                         owner: &Self::Owner,
                         _: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs>,
-                    ) -> NtResult<Self> {
-                        let mut io_target: WDFIOTARGET = WDF_NO_HANDLE.cast();
-                        let mut attrs = attrs.map(|a| a.build());
+                    ) -> NtResult<Self>
+                    {
+                        let mut io_target: WDFIOTARGET =
+                            WDF_NO_HANDLE.cast();
+                        let mut attrs =
+                            attrs.map(|a| a.build());
 
-                        let device_ptr = ptr::NonNull::new(*owner)
-                            .ok_or(STATUS_INVALID_PARAMETER)?
-                            .as_ptr();
+                        let device_ptr = ptr::NonNull::new(
+                            *owner,
+                        )
+                        .ok_or(STATUS_INVALID_PARAMETER)?
+                        .as_ptr();
 
-                        let attrs_ptr = attrs.as_mut().map_or(
-                            ptr::null_mut(),
-                            ptr::from_mut,
-                        );
+                        let attrs_ptr =
+                            attrs.as_mut().map_or(
+                                ptr::null_mut(),
+                                ptr::from_mut,
+                            );
 
                         #[cfg(feature = "kmdf-runtime")]
                         // SAFETY: `device_ptr` is safe because is passed by WDF
@@ -599,7 +647,8 @@ mod private {
                     /// managed to avoid undefined behavior.
                     pub fn read_status(
                         &self,
-                    ) -> WdfIoTargetState {
+                    ) -> WdfIoTargetState
+                    {
                         #[cfg(feature = "kmdf-runtime")]
                         {
                             WdfIoTargetState::from(unsafe {
@@ -685,8 +734,10 @@ mod private {
                         WdfIoTargetError,
                     > {
                         // if device is not started, return error
-                        let device_status = self.read_status();
-                        let WdfIoTargetState::Started = device_status
+                        let device_status =
+                            self.read_status();
+                        let WdfIoTargetState::Started =
+                            device_status
                         else {
                             return Err(IllegalState(
                                 device_status,
@@ -698,21 +749,30 @@ mod private {
 
                         #[cfg_attr(
                             feature = "test-runtime",
-                            expect(unused_variables,
-                                reason = "Unused because of test-runtime")
-                        )] let request_desc_ptr = from_option_to_ptr(
-                            request_desc.as_ref(),
-                        );
+                            expect(
+                                unused_variables,
+                                reason = "Unused because of test-runtime"
+                            )
+                        )]
+                        let request_desc_ptr =
+                            from_option_to_ptr(
+                                request_desc.as_ref(),
+                            );
 
                         // build Ioctl output buffer ptr
-                        let mut response = IoCtlResponse::<R>::default();
+                        let mut response =
+                            IoCtlResponse::<R>::default();
 
                         #[cfg_attr(
                             feature = "test-runtime",
-                            expect(unused_mut,
+                            expect(
+                                unused_mut,
                                 unused_variables,
-                                reason = "Unused because of test-runtime")
-                        )] let mut response_desc = response.build_mut();
+                                reason = "Unused because of test-runtime"
+                            )
+                        )]
+                        let mut response_desc =
+                            response.build_mut();
 
                         #[cfg_attr(
                             feature = "test-runtime",
@@ -749,13 +809,13 @@ mod private {
 
                     pub fn open(
                         params: PWDF_IO_TARGET_OPEN_PARAMS,
-                    ) {}
+                    ) {
+                    }
                 }
             }
 
             mod _wdf_queue {
                 use core::ptr;
-                use wdk_sys::{STATUS_INVALID_PARAMETER, WDFDEVICE, WDFQUEUE, WDF_NO_HANDLE};
 
                 use crate::bd::{
                     WdfIoQueueConfig, WdfObjAttrs,
@@ -765,28 +825,44 @@ mod private {
                     AsWdfFromOwnerWithConfAndAttrs,
                     AsWdfOwned, NtResult,
                 };
-
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
+                use crate::rt::wdk_sys::{
+                    STATUS_INVALID_PARAMETER,
+                    WDF_NO_HANDLE, WDFDEVICE, WDFQUEUE,
+                };
                 use crate::wdf::handle::private::Handle;
 
                 impl AsWdfOwned<WDFQUEUE> for Handle<WDFQUEUE> {
                     type Owner = WDFDEVICE;
                     type Conf = WdfIoQueueConfig;
 
-                    fn allocate_from_owner(owner: &Self::Owner, conf: Option<Self::Conf>, attrs: Option<WdfObjAttrs>) -> NtResult<Self> {
-                        let mut queue = WDF_NO_HANDLE.cast();
-                        let device = ptr::NonNull::new(*owner)
-                            .ok_or(STATUS_INVALID_PARAMETER)?
-                            .as_ptr();
+                    fn allocate_from_owner(
+                        owner: &Self::Owner,
+                        conf: Option<Self::Conf>,
+                        attrs: Option<WdfObjAttrs>,
+                    ) -> NtResult<Self>
+                    {
+                        let mut queue =
+                            WDF_NO_HANDLE.cast();
+                        let device = ptr::NonNull::new(
+                            *owner,
+                        )
+                        .ok_or(STATUS_INVALID_PARAMETER)?
+                        .as_ptr();
 
-                        let mut config = conf.map(|c| c.build()).ok_or(STATUS_INVALID_PARAMETER)?;
-                        let mut attrs = attrs.map(|a| a.build());
+                        let mut config =
+                            conf.map(|c| c.build()).ok_or(
+                                STATUS_INVALID_PARAMETER,
+                            )?;
+                        let mut attrs =
+                            attrs.map(|a| a.build());
 
-                        let attrs_ptr = attrs.as_mut().map_or(
-                            ptr::null_mut(),
-                            ptr::from_mut,
-                        );
+                        let attrs_ptr =
+                            attrs.as_mut().map_or(
+                                ptr::null_mut(),
+                                ptr::from_mut,
+                            );
 
                         #[cfg(feature = "kmdf-runtime")]
                         // SAFETY: `device` is safe because cannot be null
@@ -800,11 +876,14 @@ mod private {
                             )
                         }?;
 
-
                         Ok(Self::new(queue))
                     }
                 }
-                impl AsWdfFromOwnerWithConfAndAttrs<WDFQUEUE> for Handle<WDFQUEUE> {}
+                impl
+                    AsWdfFromOwnerWithConfAndAttrs<WDFQUEUE>
+                    for Handle<WDFQUEUE>
+                {
+                }
             }
         }
     }
