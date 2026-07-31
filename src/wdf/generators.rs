@@ -163,7 +163,7 @@ macro_rules! function_name {
 /// // Logs: "Access denied with status 0xC0000022", and returns 0xC0000022.
 /// ```
 #[macro_export]
-macro_rules! if_nterror_return_ntstatus {
+macro_rules! unwrap_nt {
     ($expr:expr) => {{
         match $expr {
             Ok(value) => value,
@@ -175,14 +175,14 @@ macro_rules! if_nterror_return_ntstatus {
         match $result {
             Ok(value) => value,
             Err(ntstatus) => {
-                let status = ntstatus.fmt_status();
-                let hex = ntstatus.fmt_hex();
+                let as_status = ntstatus.fmt_status();
+                let as_hex = ntstatus.fmt_hex();
 
                 $crate::error!(
                     "Failure happens in '{}' with status '{}({})': '{}'",
                     $crate::function_name!(),
-                    status,
-                    hex,
+                    as_status,
+                    as_hex,
                     $msg,
                 );
                 return ntstatus;
@@ -194,18 +194,55 @@ macro_rules! if_nterror_return_ntstatus {
         match $result {
             Ok(value) => value,
             Err(ntstatus) => {
-                let status = ntstatus.fmt_status();
-                let hex = ntstatus.fmt_hex();
+                let as_status = ntstatus.fmt_status();
+                let as_hex = ntstatus.fmt_hex();
 
                 $crate::error!(
                     "Failure happens in '{}' with status '{}({})'",
                     $crate::function_name!(),
-                    status,
-                    hex,
+                    as_status,
+                    as_hex,
                 );
                 return ntstatus;
             }
         }
+    }};
+
+    ($result:expr, on_failure=$on_failure:expr) => {{
+        match $result {
+            Ok(value) => value,
+            Err(ntstatus) => {
+                return $on_failure(ntstatus);
+            }
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! ok_or_nt {
+    ($expr:expr) => {{
+        $crate::unwrap_nt!($expr.ok_or(::swdk::rt::wdk_sys::STATUS_INTERNAL_ERROR))
+    }};
+    ($expr:expr, status_err=$status:ident) => {{
+        $crate::unwrap_nt!($expr.ok_or($status))
+    }};
+    ($expr:expr, on_failure=$on_failure:expr) => {{
+        $crate::unwrap_nt!($expr.ok_or(::swdk::rt::wdk_sys::STATUS_INTERNAL_ERROR), on_failure=|_| $on_failure())
+    }};
+    ($expr:expr, status_err=$status:ident, on_failure=$on_failure:expr) => {{
+        $crate::unwrap_nt!($expr.ok_or(::swdk::rt::wdk_sys::STATUS_INTERNAL_ERROR), on_failure=|_| $on_failure())
+    }};
+    ($expr:expr, as_error) => {{
+        $crate::unwrap_nt!($expr.ok_or(::swdk::rt::wdk_sys::STATUS_INTERNAL_ERROR), as_error)
+    }};
+    ($expr:expr, as_error, msg=$msg:literal) => {{
+        $crate::unwrap_nt!($expr.ok_or(::swdk::rt::wdk_sys::STATUS_INTERNAL_ERROR), as_error, msg=$msg)
+    }};
+    ($expr:expr, status_err=$status:ident, as_error) => {{
+        $crate::unwrap_nt!($expr.ok_or($status), as_error)
+    }};
+    ($expr:expr, status_err=$status:ident, as_error, msg=$msg:literal) => {{
+        $crate::unwrap_nt!($expr.ok_or($status), as_error, msg=$msg)
     }};
 }
 
@@ -337,7 +374,7 @@ macro_rules! from_ntstatus_to_ntresult {
 ///
 /// # See Also
 /// - [`if_nterror_return`]: convert [`wdk_sys::NTSTATUS`] into [`op::NtResult`]
-/// - [`crate::if_nterror_return_ntstatus`]
+/// - [`crate::unwrap_nt`]
 ///
 /// # External Resources
 /// For have information about the available functions binding you can see on the ***huge***
