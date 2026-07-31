@@ -861,9 +861,7 @@ mod __runtime {
 
         #[inline]
         pub unsafe fn wdf_request_send(
-            device: WDFDEVICE,
             target: WDFIOTARGET,
-            queue: WDFQUEUE,
             options: PWDF_REQUEST_SEND_OPTIONS,
             request: WDFREQUEST
         ) -> bool {
@@ -875,6 +873,24 @@ mod __runtime {
             ) != 0
         }
 
+        #[inline]
+        pub unsafe fn wdf_request_get_status(
+            request: WDFREQUEST
+        ) -> NtResult {
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfRequestGetStatus,
+                request,
+            )
+        }
+
+        pub unsafe fn wdf_request_format_using_current_type(
+            request: WDFREQUEST
+        ) {
+            call_unsafe_wdf_function_binding!(
+                WdfRequestFormatRequestUsingCurrentType,
+                request,
+            )
+        }
     }
 }
 pub mod utils;
