@@ -359,3 +359,23 @@ impl AsBuilder for WdfDevicePnpPowerSetup {
         }
     }
 }
+
+#[derive(Default)]
+pub struct WdfRequestSendOption {
+    pub flags: u64,
+    pub timeout: u128,
+}
+
+impl AsBuilder for WdfRequestSendOption {
+    type Descriptor<'a> = WDF_REQUEST_SEND_OPTIONS;
+
+    fn build(&self) -> Self::Descriptor<'_> {
+        WDF_REQUEST_SEND_OPTIONS {
+            Size: const_size_to_ulong!(
+                WDF_REQUEST_SEND_OPTIONS
+            ),
+            Flags: self.flags as ULONG,
+            Timeout: self.timeout as LONGLONG,
+        }
+    }
+}
