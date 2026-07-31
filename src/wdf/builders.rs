@@ -11,6 +11,8 @@
 use core::marker::PhantomData;
 use core::ptr;
 
+use wdk_sys::{LONGLONG, WDF_REQUEST_SEND_OPTIONS};
+
 use crate::ctx::WdfCtxNoneDesc;
 use crate::op::{AsBuilder, AsCtxDescriptor, AsRaw};
 use crate::rt::wdk_sys::{
