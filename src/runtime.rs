@@ -793,11 +793,11 @@ mod __runtime {
 
         #[inline]
         pub unsafe fn wdf_f_do_init_set_filter(
-            device_init: &PWDFDEVICE_INIT,
+            device_init: PWDFDEVICE_INIT,
         ) {
             call_unsafe_wdf_function_binding!(
                 WdfFdoInitSetFilter,
-                *device_init,
+                device_init,
             );
         }
 
