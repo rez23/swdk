@@ -101,9 +101,11 @@ mod private {
         use core::ops::Deref;
         use core::ptr::NonNull;
 
+        use wdk_sys::HANDLE;
+
         use crate::Handle;
         use crate::op::{
-            AsPtr, AsRaw, AsRawWithBorrow, AsWdfType,
+            AsKernelType, AsPtr, AsRaw, AsWdfHandle,
             IntoInner, IntoRaw,
         };
 
@@ -119,7 +121,12 @@ mod private {
             }
         }
 
-        impl<H: Copy> AsWdfType<H> for Handle<H> {}
+        impl<H: Copy> AsWdfHandle<H> for Handle<H> {
+            fn as_wdf_handle(&self) -> NonNull<HANDLE> {
+                self.0.cast()
+            }
+        }
+        impl<H: Copy> AsKernelType<H> for Handle<H> {}
         impl<H: Copy> IntoInner<H> for Handle<H> {
             fn into_inner(self) -> H {
                 unsafe { *self.0.as_ptr() }
@@ -144,17 +151,6 @@ mod private {
 
         #[cfg(feature = "minimal-runtime")]
         mod kmdf {
-            mod handle {
-                use crate::Handle;
-                use crate::op::{AsRaw, AsWdfHandle};
-                use crate::rt::wdk_sys::HANDLE;
-
-                unsafe impl AsWdfHandle<HANDLE> for Handle {
-                    fn as_wdf_handle(&self) -> HANDLE {
-                        self.raw()
-                    }
-                }
-            }
             mod object {
                 use core::ptr;
                 use core::ptr::NonNull;
@@ -164,8 +160,7 @@ mod private {
                 use crate::Handle;
                 use crate::bd::WdfObjAttrs;
                 use crate::op::{
-                    AsBuilder, AsCtxDescriptor,
-                    AsWdfObject, AsWdfOwner, AsWdfWithCtx,
+                    AsBuilder, AsCtxDescriptor, FromKernel,
                     NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
@@ -174,15 +169,12 @@ mod private {
                     WDF_NO_HANDLE, WDFOBJECT,
                 };
 
-                #[cfg(feature = "kmdf-runtime")]
-                unsafe impl AsWdfObject<WDFOBJECT> for Handle<WDFOBJECT> {}
-
                 impl Handle<WDFOBJECT> {
                     pub fn allocate(
                         attrs: Option<WdfObjAttrs>,
                     ) -> NtResult<Self>
                     {
-                        Self::allocate_from_owned(
+                        Self::from_kernel_explicit(
                             NonNull::dangling(),
                             None,
                             attrs,
@@ -190,12 +182,12 @@ mod private {
                     }
                 }
 
-                impl AsWdfOwner<WDFOBJECT> for Handle<WDFOBJECT> {
+                impl FromKernel<WDFOBJECT> for Handle<WDFOBJECT> {
+                    type Accessor = ();
                     type Conf = ();
-                    type Owned = ();
 
-                    fn allocate_from_owned<D>(
-                        _: NonNull<Self::Owned>,
+                    fn from_kernel_explicit<D>(
+                        _: NonNull<Self::Accessor>,
                         _: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
@@ -227,9 +219,6 @@ mod private {
                         ))
                     }
                 }
-
-                #[cfg(feature = "kmdf-runtime")]
-                unsafe impl AsWdfWithCtx<WDFOBJECT> for Handle<WDFOBJECT> {}
             }
             mod device_init {
                 use core::ptr;
@@ -277,40 +266,28 @@ mod private {
 
                 use wdk_sys::{
                     STATUS_INTERNAL_ERROR, WDFDEVICE__,
-                    WDFDEVICE_INIT, WDFIOTARGET,
-                    WDFIOTARGET__, WDFQUEUE__,
+                    WDFDEVICE_INIT, WDFIOTARGET__,
+                    WDFQUEUE__,
                 };
 
                 use crate::Handle;
                 use crate::bd::WdfObjAttrs;
                 use crate::op::{
                     AsBuilder, AsCtxDescriptor, AsPtr,
-                    AsRaw, AsWdfHandle, AsWdfObject,
-                    AsWdfOwner, AsWdfWithCtx, NtResult,
+                    FromKernel, NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
-                    HANDLE, WDF_NO_HANDLE, WDFDEVICE,
+                    WDF_NO_HANDLE, WDFDEVICE,
                 };
 
-                unsafe impl AsWdfHandle<WDFDEVICE__>
-                    for Handle<WDFDEVICE__>
-                {
-                    fn as_wdf_handle(&self) -> HANDLE {
-                        self.as_ptr() as HANDLE
-                    }
-                }
-                unsafe impl AsWdfObject<WDFDEVICE__>
-                    for Handle<WDFDEVICE__>
-                {
-                }
-                impl AsWdfOwner<WDFDEVICE__> for Handle<WDFDEVICE__> {
+                impl FromKernel<WDFDEVICE__> for Handle<WDFDEVICE__> {
+                    type Accessor = WDFDEVICE_INIT;
                     type Conf = ();
-                    type Owned = WDFDEVICE_INIT;
 
-                    fn allocate_from_owned<D>(
-                        owned: NonNull<Self::Owned>,
+                    fn from_kernel_explicit<D>(
+                        owned: NonNull<Self::Accessor>,
                         _: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
@@ -350,11 +327,6 @@ mod private {
                         D::initialize(p_device.cast());
                         Ok(Self::new(p_device))
                     }
-                }
-
-                unsafe impl AsWdfWithCtx<WDFDEVICE__>
-                    for Handle<WDFDEVICE__>
-                {
                 }
 
                 impl Handle<WDFDEVICE__> {
@@ -412,7 +384,7 @@ mod private {
                     where
                         D: AsCtxDescriptor,
                     {
-                        Self::allocate_from_owned::<D>(
+                        Self::from_kernel_explicit::<D>(
                             owner, None, attrs,
                         )
                     }
@@ -451,7 +423,7 @@ mod private {
 
                 use wdk_sys::{
                     DRIVER_OBJECT, STATUS_INTERNAL_ERROR,
-                    WDFDRIVER__,
+                    WDFDEVICE__, WDFDRIVER__,
                 };
 
                 use crate::Handle;
@@ -459,23 +431,22 @@ mod private {
                     WdfDriverConf, WdfObjAttrs,
                 };
                 use crate::op::{
-                    AsBuilder, AsCtxDescriptor, AsWdfOwner,
-                    NtResult,
+                    AsBuilder, AsCtxDescriptor, FromKernel,
+                    FromKernelWithConf, NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
-                    PDRIVER_OBJECT,
                     STATUS_INVALID_PARAMETER,
                     WDF_NO_HANDLE, WDFDRIVER,
                 };
 
-                impl AsWdfOwner<WDFDRIVER__> for Handle<WDFDRIVER__> {
+                impl FromKernel<WDFDRIVER__> for Handle<WDFDRIVER__> {
+                    type Accessor = DRIVER_OBJECT;
                     type Conf = WdfDriverConf;
-                    type Owned = DRIVER_OBJECT;
 
-                    fn allocate_from_owned<D>(
-                        owner: NonNull<Self::Owned>,
+                    fn from_kernel_explicit<D>(
+                        accessor: NonNull<Self::Accessor>,
                         conf: Option<Self::Conf>,
                         attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
@@ -491,7 +462,8 @@ mod private {
                         })?;
                         let mut config = conf.build();
 
-                        let driver_obj_ptr = owner.as_ptr();
+                        let driver_obj_ptr =
+                            accessor.as_ptr();
 
                         let attrs_ptr =
                             attrs.as_mut().map_or(
@@ -523,21 +495,10 @@ mod private {
                         ))
                     }
                 }
-                impl Handle<WDFDRIVER__> {
-                    pub fn allocate(
-                        p_driver_obj: NonNull<
-                            DRIVER_OBJECT,
-                        >,
-                        conf: WdfDriverConf,
-                        attrs: Option<WdfObjAttrs>,
-                    ) -> NtResult<Self>
-                    {
-                        Self::allocate_from_owned(
-                            p_driver_obj,
-                            Some(conf),
-                            attrs,
-                        )
-                    }
+
+                impl FromKernelWithConf<WDFDEVICE__>
+                    for Handle<WDFDEVICE__>
+                {
                 }
             }
             mod io_target {
@@ -557,17 +518,18 @@ mod private {
                 use crate::ioctl::{
                     IoCtlRequest, IoCtlResponse,
                 };
-                use crate::op::{
-                    AsBuilder, AsBuilderMut, AsPtr,
-                    AsWdfFromOwner, AsWdfOwned, NtResult,
-                };
                 #[cfg(feature = "kmdf-runtime")]
-                use crate::op::{AsOptionalBuff, AsRaw};
+                use crate::op::AsOptionalBuff;
+                use crate::op::{
+                    AsBuilder, AsBuilderMut,
+                    AsCtxDescriptor, AsPtr, FromKernel,
+                    NtResult,
+                };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
                     STATUS_INVALID_PARAMETER, ULONG_PTR,
-                    WDF_NO_HANDLE, WDFDEVICE, WDFIOTARGET,
+                    WDF_NO_HANDLE, WDFIOTARGET,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::runtime::kmdf::{
@@ -610,14 +572,8 @@ mod private {
                 }
 
                 #[cfg(feature = "kmdf-runtime")]
-                impl AsWdfFromOwner<WDFIOTARGET__>
-                    for Handle<WDFIOTARGET__>
-                {
-                }
-
-                #[cfg(feature = "kmdf-runtime")]
-                impl AsWdfOwned<WDFIOTARGET__> for Handle<WDFIOTARGET__> {
-                    type Owner = WDFDEVICE__;
+                impl FromKernel<WDFIOTARGET__> for Handle<WDFIOTARGET__> {
+                    type Accessor = WDFDEVICE__;
                     type Conf = ();
 
                     #[cfg_attr(
@@ -627,18 +583,20 @@ mod private {
                             reason = "Unused because of test-runtime"
                         )
                     )]
-                    fn allocate_from_owner(
-                        owner: NonNull<Self::Owner>,
+                    fn from_kernel_explicit<D>(
+                        accessor: NonNull<Self::Accessor>,
                         _: Option<Self::Conf>,
-                        attrs: Option<WdfObjAttrs>,
+                        attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
+                    where
+                        D: AsCtxDescriptor,
                     {
                         let mut io_target: WDFIOTARGET =
                             WDF_NO_HANDLE.cast();
                         let mut attrs =
                             attrs.map(|a| a.build());
 
-                        let device_ptr = owner.as_ptr();
+                        let device_ptr = accessor.as_ptr();
 
                         let attrs_ptr =
                             attrs.as_mut().map_or(
@@ -884,31 +842,32 @@ mod private {
                     WdfIoQueueConfig, WdfObjAttrs,
                 };
                 use crate::op::{
-                    AsBuilder, AsPtr, AsRaw,
-                    AsWdfFromOwnerWithConfAndAttrs,
-                    AsWdfOwned, NtResult,
+                    AsBuilder, AsCtxDescriptor, AsPtr,
+                    FromKernel, FromKernelWithConfAndAttrs,
+                    NtResult,
                 };
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
-                    STATUS_INVALID_PARAMETER,
-                    WDF_NO_HANDLE, WDFDEVICE, WDFQUEUE,
+                    STATUS_INVALID_PARAMETER, WDF_NO_HANDLE,
                 };
                 use crate::wdf::handle::private::Handle;
 
-                impl AsWdfOwned<WDFQUEUE__> for Handle<WDFQUEUE__> {
-                    type Owner = WDFDEVICE__;
+                impl FromKernel<WDFQUEUE__> for Handle<WDFQUEUE__> {
+                    type Accessor = WDFDEVICE__;
                     type Conf = WdfIoQueueConfig;
 
-                    fn allocate_from_owner(
-                        owner: NonNull<Self::Owner>,
+                    fn from_kernel_explicit<D>(
+                        accessor: NonNull<Self::Accessor>,
                         conf: Option<Self::Conf>,
-                        attrs: Option<WdfObjAttrs>,
+                        attrs: Option<WdfObjAttrs<D>>,
                     ) -> NtResult<Self>
+                    where
+                        D: AsCtxDescriptor,
                     {
                         let mut queue =
                             WDF_NO_HANDLE.cast();
-                        let device = owner.as_ptr();
+                        let device = accessor.as_ptr();
 
                         let mut config =
                             conf.map(|c| c.build()).ok_or(
@@ -942,10 +901,8 @@ mod private {
                         ))
                     }
                 }
-                impl
-                    AsWdfFromOwnerWithConfAndAttrs<
-                        WDFQUEUE__,
-                    > for Handle<WDFQUEUE__>
+                impl FromKernelWithConfAndAttrs<WDFQUEUE__>
+                    for Handle<WDFQUEUE__>
                 {
                 }
                 impl Handle<WDFQUEUE__> {
@@ -962,10 +919,10 @@ mod private {
                 }
             }
             mod w_request {
-                use wdk_sys::{WDFREQUEST, WDFREQUEST__};
+                use wdk_sys::WDFREQUEST__;
 
                 use crate::Handle;
-                use crate::op::{AsPtr, AsRaw};
+                use crate::op::AsPtr;
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::NTSTATUS;

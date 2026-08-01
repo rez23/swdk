@@ -144,14 +144,8 @@ mod _operators {
         }
     }
 
-    pub unsafe trait AsWdfObject<O: Copy>: AsWdfHandle<O> {
-        fn as_wdf_object(&self) -> WDFOBJECT {
-            self.as_wdf_handle()
-        }
-    }
-
-    pub unsafe trait AsWdfHandle<H: Copy>: AsWdfType<H> {
-        fn as_wdf_handle(&self) -> HANDLE;
+    pub trait AsWdfHandle<H: Copy> {
+        fn as_wdf_handle(&self) -> NonNull<HANDLE>;
     }
 
     /// A trait that extends [`AsPtr`] and [`AsMut`] to provide functionality for obtaining
@@ -963,68 +957,8 @@ mod _operators {
         }
     }
 
-    pub trait AsWdfType<O: Copy>: Sized + AsPtr<O> + AsRef<O> + Deref<Target=O> {}
+    pub trait AsKernelType<O: Copy>: Sized + AsPtr<O> + AsRef<O> + Deref<Target=O> + AsWdfHandle<O> {}
 
-    /// Provides typed access to WDF object contexts associated with a kernel object.
-    ///
-    /// `AsWdfWithCtx` is implemented by WDF handle wrappers that can retrieve a typed
-    /// context object previously associated with the underlying WDF object.
-    ///
-    /// In KMDF, object contexts are attached to framework objects through
-    /// `WDF_OBJECT_ATTRIBUTES` and retrieved later through the corresponding
-    /// `WDF_OBJECT_CONTEXT_TYPE_INFO`. SWDK models this mechanism through
-    /// [`AsCtxDescriptor`] and exposes typed access through this trait.
-    ///
-    /// # Safety
-    ///
-    /// This trait is `unsafe` because implementing it means promising that the
-    /// wrapped WDF object is a valid object that may legally be used for typed
-    /// context retrieval.
-    ///
-    /// More specifically, an implementation must guarantee that:
-    ///
-    /// - The underlying WDF handle is valid and still owned by the framework;
-    /// - The handle refers to an object that supports WDF object contexts;
-    /// - The requested context type `C` was actually registered or allocated for
-    ///   that WDF object;
-    /// - `C::from_kernel(...)` returns a pointer to a valid instance of `C`;
-    /// - The returned context pointer is properly aligned and initialized;
-    /// - The returned context remains valid for at least the lifetime of `&self`;
-    /// - Creating a shared reference to the context does not violate Rust aliasing
-    ///   rules.
-    ///
-    /// `NonNull<C>` is not sufficient to prove these invariants. It only guarantees
-    /// that the pointer is not null. It does not prove that the pointed memory is a
-    /// valid WDF context of type `C`, nor that the memory is still alive or safely
-    /// borrowable as `&C`.
-    ///
-    /// # Provided Methods
-    ///
-    /// ## `get_ctx`
-    ///
-    /// Attempts to retrieve a typed WDF context associated with this object.
-    ///
-    /// ```rust
-    /// let ctx = device.get_ctx::<DeviceData>();
-    /// ```
-    ///
-    /// Returns:
-    ///
-    /// - `Some(HandleRef<'_, C>)` if a context pointer for `C` is available;
-    /// - `None` if the context cannot be retrieved.
-    ///
-    /// # Notes
-    ///
-    /// `get_ctx` is safe to call because the safety contract is placed on the
-    /// implementation.
-    pub unsafe trait AsWdfWithCtx<O: Copy>: AsWdfObject<O> {
-        #[inline]
-        fn ctx<C: AsCtxDescriptor>(
-            &self,
-        ) -> Option<Handle<C>> {
-            Some(Handle::new(C::from_kernel(NonNull::new(self.as_wdf_object())?)?))
-        }
-    }
 
     /// A trait usually represents a kernel object or resource that is allocable inside the kernel
     /// by a runtime framework (like WDF).
@@ -1087,68 +1021,34 @@ mod _operators {
     /// - [`Handle`]
     /// - [`WdfObjAttrs`]
     /// - [`AsWdfOwned`]
-    pub trait AsWdfOwner<O: Copy>: AsWdfType<O> {
+    pub trait FromKernel<O: Copy>: AsWdfHandle<O>+ AsKernelType<O> {
+        type Accessor;
         type Conf;
-        type Owned;
 
-        /// Create and allocate `Self` in the kernel, usually using some kern runtime like WDF
-        ///
-        /// # Type Parameters
-        /// - `D`: A type that implements the `AsCtxDescriptor` trait, representing the context descriptor.
-        ///
-        /// # Parameters
-        /// - `owned`: The owned instance of type `Self::Owned` from which the new instance will be created in the kernel.
-        /// - `conf`: The configuration object of type `Self::Conf` to configure the new instance if it is necessary for the runtime framework.
-        /// - `attrs`: Optional attributes of the type `WdfObjAttrs<D>` containing additional context information
-        ///   related to the provided descriptor `D`.
-        ///
-        /// # Returns
-        /// - An `NtResult<Self>`, which is either the successfully created instance of the implementing type
-        ///   or an error reflecting the failure of the creation process.
-        ///
-        /// # Constraints
-        /// - The type parameter `D` must implement the `AsCtxDescriptor` trait.
-        ///   [`AsNoneCtxDesc`] is provided as the default representation of none context descriptor.
-        ///
-        /// # Example
-        /// ```rust
-        /// # use wdk_sys::WDFDEVICE;
-        /// # use swdk::call_ntstatus_wdf_unsafe_binding;
-        /// # use swdk::op::{AsWdfOwner, NtResult};
-        /// # struct MyType;
-        /// # impl AsWdfOwner<WDFDEVICE> {
-        ///     fn from_owned_with_attrs<D>(
-        ///             owned: Self::Owned,
-        ///             conf: Self::Conf,
-        ///             attrs: Option<WdfObjAttrs<D>>,
-        ///     ) -> NtResult<Self> {
-        ///         call_ntstatus_wdf_unsafe_binding!(
-        ///             WdfDriverCreate,
-        ///             owned,
-        ///             conf,
-        ///             attrs,
-        ///         )
-        ///     }
-        /// # }
-        /// ```
-        /// Above an exemplification of how is implemented `Handle<wdk_sys::WDFDEVICE>`
-        fn allocate_from_owned<D>(
-            owned: NonNull<Self::Owned>,
+        #[inline]
+        fn ctx<C: AsCtxDescriptor>(
+            &self,
+        ) -> Option<Handle<C>> {
+            Some(Handle::new(C::from_kernel(self.as_wdf_handle().cast())?))
+        }
+
+        fn from_kernel_explicit<D>(
+            accessor: NonNull<Self::Accessor>,
             conf: Option<Self::Conf>,
             attrs: Option<WdfObjAttrs<D>>,
         ) -> NtResult<Self> where
                 D: AsCtxDescriptor;
     }
 
-    pub trait AsWdfFromOwnedWithConf<O: Copy>: AsWdfOwner<O> {
+    pub trait FromKernelWithConf<O: Copy>: FromKernel<O> {
         /// Helpers to call [`AsWdfOwner::allocate_from_owned`] when no args are needed by the implementing type
         /// ### See Also
         /// - [`AsWdfOwner::allocate_from_owned`]
-        fn allocate(
-            owned: NonNull<Self::Owned>,
+        fn from_kernel(
+            owned: NonNull<Self::Accessor>,
             conf: Self::Conf,
         ) -> NtResult<Self> {
-            Self::allocate_from_owned::<WdfCtxNoneDesc>(
+            Self::from_kernel_explicit::<WdfCtxNoneDesc>(
                 owned,
                 Some(conf),
                 None,
@@ -1156,13 +1056,13 @@ mod _operators {
         }
     }
 
-    pub trait AsWdfFromOwnedWithConfAndAttrs<O: Copy>: AsWdfOwner<O> {
-        fn allocate(
-            owned: NonNull<Self::Owned>,
+    pub trait FromKernelWithConfAndAttrs<O: Copy>: FromKernel<O> {
+        fn from_kernel(
+            owned: NonNull<Self::Accessor>,
             conf: Self::Conf,
             attrs: WdfObjAttrs,
         ) -> NtResult<Self> {
-            Self::allocate_from_owned::<WdfCtxNoneDesc>(
+            Self::from_kernel_explicit::<WdfCtxNoneDesc>(
                 owned,
                 Some(conf),
                 Some(attrs),
@@ -1170,105 +1070,16 @@ mod _operators {
         }
     }
 
-    pub trait AsWdfFromOwnedWithAttrs<O: Copy>: AsWdfOwner<O> {
-        fn allocate(
-            owned: NonNull<Self::Owned>,
+    pub trait FromKernelWithAttrs<O: Copy>: FromKernel<O> {
+        fn from_kernel(
+            owned: NonNull<Self::Accessor>,
             attrs: WdfObjAttrs,
         ) -> NtResult<Self> {
-            Self::allocate_from_owned::<WdfCtxNoneDesc>(
+            Self::from_kernel_explicit::<WdfCtxNoneDesc>(
                 owned,
                 None,
                 Some(attrs),
             )
-        }
-    }
-
-    /// A trait that usually represents a kernel resource or object that is owned by other kernel
-    /// objects or resources inside the kernel.
-    ///
-    /// This trait is used to create instances of `Self` from a reference to their owner object,
-    /// while also providing capabilities to get a raw pointer and reference to the associated object.
-    ///
-    /// # Associated Types
-    /// - `Owner`: Represents the type of the owner from which an instance of `Self` can be created.
-    ///
-    /// # Requirements
-    /// - This trait requires the implementor to also implement `AsPtr<O>` and `AsRef<O>`.
-    ///   - `AsPtr<O>` is a trait that provides the ability to get a raw pointer to the object.
-    ///   - `AsRef<O>` enables getting a reference to the associated object.
-    ///
-    /// # See Also
-    /// - [`Handle`]
-    /// - [`AsWdfOwned`]
-    /// - [`AsPtr`]
-    pub trait AsWdfOwned<O: Copy>: AsWdfType<O> {
-        type Owner;
-        type Conf;
-
-        /// Creates an instance of `Self` where `Self` usually is some kinds of resources that are ***owned***
-        /// by some other type of resources of type `Self::Owner` allocated in the kernel.
-        ///
-        /// # Parameters
-        /// - `owner`: A reference to the owner from which the `Self` instance will be created.
-        ///
-        /// # Returns
-        /// - `NtResult<Self>`: The result of constructing an instance of `Self`.
-        ///   If the operation is successful, it returns an instance of `Self`
-        ///   wrapped in a `NtResult`. Otherwise, it contains an error.
-        ///
-        /// # Errors
-        /// This function may return an error if the creation of the instance from the owner fails.
-        ///
-        /// ### Se Also
-        /// - [`Handle`]: for look to a possible implementation
-        fn allocate_from_owner(
-            owner: NonNull<Self::Owner>,
-            conf: Option<Self::Conf>,
-            attrs: Option<WdfObjAttrs>,
-        ) -> NtResult<Self>;
-    }
-
-    pub trait AsWdfFromOwnerWithConfAndAttrs<O: Copy>: AsWdfOwned<O> {
-        fn allocate(
-            owner: NonNull<Self::Owner>,
-            conf: Self::Conf,
-            attrs: Option<WdfObjAttrs>,
-        ) -> NtResult<Self> {
-            Self::allocate_from_owner(
-                owner,
-                Some(conf),
-                attrs,
-            )
-        }
-    }
-
-    pub trait AsWdfFromOwnerWithAttrs<O: Copy>: AsWdfOwned<O> {
-        fn allocate(
-            owner: NonNull<Self::Owner>,
-            attrs: Option<WdfObjAttrs>,
-        ) -> NtResult<Self> {
-            Self::allocate_from_owner(owner, None, attrs)
-        }
-    }
-
-    pub trait AsWdfFromOwnerWithConf<O: Copy>: AsWdfOwned<O> {
-        fn allocate(
-            owner: NonNull<Self::Owner>,
-            conf: Self::Conf,
-        ) -> NtResult<Self> {
-            Self::allocate_from_owner(
-                owner,
-                Some(conf),
-                None,
-            )
-        }
-    }
-
-    pub trait AsWdfFromOwner<O: Copy>: AsWdfOwned<O> {
-        fn from_owner(
-            owner: NonNull<Self::Owner>,
-        ) -> NtResult<Self> {
-            Self::allocate_from_owner(owner, None, None)
         }
     }
 
