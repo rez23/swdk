@@ -5,6 +5,48 @@ mod _values {
     };
     use alloc::vec::Vec;
     use core::ffi::c_int;
+    use num_enum::{IntoPrimitive, TryFromPrimitive};
+    #[repr(i32)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    pub enum WdfIoQueueDispatchType {
+        Invalid = 0,
+        Sequential = 1,
+        Parallel = 2,
+        Manual = 3,
+        Max = 4,
+    }
+    #[repr(i32)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    pub enum WdfIoQueueState {
+        AcceptRequests = 1,
+        DispatchRequests = 2,
+        NoRequests = 4,
+        DriverNoRequests = 8,
+        PnpHeld = 16,
+    }
+    #[repr(i32)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    pub enum WdfTriState {
+        False = 0,
+        True = 1,
+        Default = 2,
+    }
+
+    #[repr(i32)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    pub enum WdfFileObjClass {
+        Invalid = 0,
+        NotRequired = 1,
+        WdfCanUseFsContext = 2,
+        WdfCanUseFsContext2 = 3,
+        WdfCannotUseFsContexts = 4,
+        CanBeOptional = -2147483648,
+    }
+    impl Default for WdfTriState {
+        fn default() -> Self {
+            Self::Default
+        }
+    }
 
     #[derive(Debug)]
     pub struct IoCtlTargetSendInfo {
@@ -13,8 +55,9 @@ mod _values {
         pub request: Vec<u8>,
         pub byte_returned: usize,
     }
-    #[derive(Clone)]
+    
     #[repr(i32)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
     pub enum WdfSyncScope {
         Invalid = 0,
         Inherit = 1,
@@ -22,8 +65,8 @@ mod _values {
         Queue = 3,
         None = 4,
     }
-    #[derive(Clone)]
     #[repr(i32)]
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
     pub enum WdfExecutionLevel {
         Invalid = 0,
         Inherit = 1,
