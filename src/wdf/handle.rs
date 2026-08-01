@@ -430,10 +430,7 @@ mod private {
                 use crate::bd::{
                     WdfDriverConf, WdfObjAttrs,
                 };
-                use crate::op::{
-                    AsBuilder, AsCtxDescriptor, FromKernel,
-                    FromKernelWithConf, NtResult,
-                };
+                use crate::op::{AsBuilder, AsCtxDescriptor, FromKernel, FromKernelWithConf, FromKernelWithConfAndAttrs, NtResult};
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 use crate::rt::wdk_sys::{
@@ -496,10 +493,8 @@ mod private {
                     }
                 }
 
-                impl FromKernelWithConf<WDFDEVICE__>
-                    for Handle<WDFDEVICE__>
-                {
-                }
+                impl FromKernelWithConfAndAttrs<WDFDRIVER__>
+                    for Handle<WDFDRIVER__> {}
             }
             mod io_target {
                 #[cfg(feature = "kmdf-runtime")]
