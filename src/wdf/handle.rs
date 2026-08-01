@@ -98,8 +98,10 @@ mod private {
     /// - [API reference documentation for Windows Driver Kit](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/)
     #[derive(Clone, Debug)]
     pub struct Handle<H = HANDLE>(NonNull<H>);
+    pub type HandleRef<'a, H=HANDLE> = Handle<&'a H>;
 
     mod impls {
+        use core::borrow::Borrow;
         #[cfg(feature = "test-runtime")]
         use crate::rt::wdk_sys;
 
@@ -109,10 +111,8 @@ mod private {
         use wdk_sys::HANDLE;
 
         use crate::Handle;
-        use crate::op::{
-            AsKernelType, AsPtr, AsRaw, AsWdfHandle,
-            IntoInner, IntoRaw,
-        };
+        use crate::op::{AsKernelType, AsPtr, AsRaw, AsRawWithBorrow, AsWdfHandle, IntoInner, IntoRaw};
+        use crate::wdf::handle::private::HandleRef;
 
         impl<H> Handle<H> {
             pub fn new(raw: NonNull<H>) -> Self {
@@ -121,7 +121,7 @@ mod private {
         }
 
         impl<H> Handle<H> {
-            pub fn non_null(&self) -> NonNull<H> {
+            pub fn as_non_null(&self) -> NonNull<H> {
                 self.0
             }
         }
@@ -153,6 +153,17 @@ mod private {
         unsafe impl<H> Sync for Handle<H> {}
         impl<H: Copy> IntoRaw<H> for Handle<H> {}
         impl<H: Copy> AsRaw<H> for Handle<H> {}
+        impl<'a, H> Borrow<H> for HandleRef<'a, H> {
+            fn borrow(&self) -> &H {
+                unsafe { self.0.as_ref() }
+            }
+        }
+        impl<'a, H: Copy> AsRawWithBorrow<H> for HandleRef<'a, H> {}
+        impl<'a, H: Copy> HandleRef<'a, H> {
+            pub fn raw(&self) -> H {
+                *self.0
+            }
+        }
 
         #[cfg(feature = "minimal-runtime")]
         mod kmdf {
@@ -237,15 +248,14 @@ mod private {
                 use wdk_sys::WDFDEVICE_INIT;
 
                 use crate::Handle;
-                use crate::bd::WdfDevicePnpPowerSetup;
+                use crate::bd::{WdfDevicePnpPowerSetup, WdfFileObjectConfig, WdfObjAttrs};
                 use crate::op::{AsBuilder, AsPtr};
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
 
                 impl Handle<WDFDEVICE_INIT> {
-                    #[inline]
-                    #[cfg(feature = "kmdf-runtime")]
                     pub fn with_filter(self) -> Self {
+                        #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_f_do_init_set_filter(
                                 self.0.as_ptr().cast(),
@@ -254,13 +264,14 @@ mod private {
                         self
                     }
 
-                    #[inline]
-                    #[cfg(feature = "kmdf-runtime")]
                     pub fn with_pnp_setup(
                         self,
                         setup: WdfDevicePnpPowerSetup,
                     ) -> Self {
+                        #[cfg(feature = "kmdf-runtime")]
                         let pnp_setup = setup.build();
+                        
+                        #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_device_init_set_pnp_power_event_callbacks(
                                 self.as_ptr().cast_mut(),
@@ -269,6 +280,28 @@ mod private {
                         };
                         self
                     }
+                    
+                    #[cfg(feature = "kmdf-runtime")]
+                    pub fn with_file_object(self, conf: WdfFileObjectConfig, attrs: Option<WdfObjAttrs>) -> Self {
+                        let mut attrs = attrs.map(|attrs| attrs.build());
+                        
+                        let conf = conf.build();
+                        let p_attrs =
+                            attrs.as_mut().map_or(
+                                ptr::null_mut(),
+                                ptr::from_mut,
+                            );
+                        
+                        unsafe {
+                            __cb::wdf_device_init_set_file_object_config(
+                                self.as_ptr().cast_mut(),
+                                ptr::from_ref(&conf).cast_mut(),
+                                p_attrs,
+                            )
+                        };
+                        self
+                    }
+                    
                 }
             }
             mod device {
@@ -972,8 +1005,8 @@ mod private {
                     }
 
                     pub fn format_using_current_type(
-                        self,
-                    ) -> Self {
+                        &mut self,
+                    ) -> &Self {
                         #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_request_format_using_current_type(
