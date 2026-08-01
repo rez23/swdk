@@ -80,16 +80,21 @@ mod __runtime {
             // I/O queue
             //
 
-            pub type WDF_IO_QUEUE_DISPATCH_TYPE = core::ffi::c_int;
+            pub type WDF_IO_QUEUE_DISPATCH_TYPE =
+                core::ffi::c_int;
             pub type WDF_TRI_STATE = core::ffi::c_int;
 
             pub mod _WDF_IO_QUEUE_DISPATCH_TYPE {
                 pub type Type = core::ffi::c_int;
 
-                pub const WdfIoQueueDispatchInvalid: Type = 0;
-                pub const WdfIoQueueDispatchSequential: Type = 1;
-                pub const WdfIoQueueDispatchParallel: Type = 2;
-                pub const WdfIoQueueDispatchManual: Type = 3;
+                pub const WdfIoQueueDispatchInvalid: Type =
+                    0;
+                pub const WdfIoQueueDispatchSequential:
+                    Type = 1;
+                pub const WdfIoQueueDispatchParallel: Type =
+                    2;
+                pub const WdfIoQueueDispatchManual: Type =
+                    3;
             }
 
             pub mod _WDF_TRI_STATE {
@@ -100,36 +105,47 @@ mod __runtime {
                 pub const WdfUseDefault: Type = 2;
             }
 
-            pub type PFN_WDF_IO_QUEUE_IO_DEFAULT =
-            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST)>;
+            pub type PFN_WDF_IO_QUEUE_IO_DEFAULT = Option<
+                unsafe extern "C" fn(WDFQUEUE, WDFREQUEST),
+            >;
 
-            pub type PFN_WDF_IO_QUEUE_IO_READ =
-            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST, usize)>;
+            pub type PFN_WDF_IO_QUEUE_IO_READ = Option<
+                unsafe extern "C" fn(
+                    WDFQUEUE,
+                    WDFREQUEST,
+                    usize,
+                ),
+            >;
 
-            pub type PFN_WDF_IO_QUEUE_IO_WRITE =
-            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST, usize)>;
+            pub type PFN_WDF_IO_QUEUE_IO_WRITE = Option<
+                unsafe extern "C" fn(
+                    WDFQUEUE,
+                    WDFREQUEST,
+                    usize,
+                ),
+            >;
 
             pub type PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL =
-            Option<
-                unsafe extern "C" fn(
-                    WDFQUEUE,
-                    WDFREQUEST,
-                    usize,
-                    usize,
-                    ULONG,
-                ),
-            >;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFQUEUE,
+                        WDFREQUEST,
+                        usize,
+                        usize,
+                        ULONG,
+                    ),
+                >;
 
             pub type PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL =
-            Option<
-                unsafe extern "C" fn(
-                    WDFQUEUE,
-                    WDFREQUEST,
-                    usize,
-                    usize,
-                    ULONG,
-                ),
-            >;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFQUEUE,
+                        WDFREQUEST,
+                        usize,
+                        usize,
+                        ULONG,
+                    ),
+                >;
 
             #[repr(C)]
             #[derive(Copy, Clone)]
@@ -181,25 +197,18 @@ mod __runtime {
             }
 
             pub type PFN_WDF_IO_TARGET_QUERY_REMOVE =
-            Option<
-                unsafe extern "C" fn(
-                    WDFIOTARGET,
-                ) -> NTSTATUS,
-            >;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFIOTARGET,
+                    )
+                        -> NTSTATUS,
+                >;
 
             pub type PFN_WDF_IO_TARGET_REMOVE_CANCELED =
-            Option<
-                unsafe extern "C" fn(
-                    WDFIOTARGET,
-                ),
-            >;
+                Option<unsafe extern "C" fn(WDFIOTARGET)>;
 
             pub type PFN_WDF_IO_TARGET_REMOVE_COMPLETE =
-            Option<
-                unsafe extern "C" fn(
-                    WDFIOTARGET,
-                ),
-            >;
+                Option<unsafe extern "C" fn(WDFIOTARGET)>;
 
             impl Default for _WDF_IO_QUEUE_CONFIG__bindgen_ty_1 {
                 fn default() -> Self {
@@ -236,15 +245,25 @@ mod __runtime {
                     }
                 }
             }
-            pub type PFN_WDF_IO_QUEUE_IO_STOP =
-            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST, ULONG)>;
+            pub type PFN_WDF_IO_QUEUE_IO_STOP = Option<
+                unsafe extern "C" fn(
+                    WDFQUEUE,
+                    WDFREQUEST,
+                    ULONG,
+                ),
+            >;
 
-            pub type PFN_WDF_IO_QUEUE_IO_RESUME =
-            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST)>;
+            pub type PFN_WDF_IO_QUEUE_IO_RESUME = Option<
+                unsafe extern "C" fn(WDFQUEUE, WDFREQUEST),
+            >;
 
             pub type PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE =
-            Option<unsafe extern "C" fn(WDFQUEUE, WDFREQUEST)>;
-
+                Option<
+                    unsafe extern "C" fn(
+                        WDFQUEUE,
+                        WDFREQUEST,
+                    ),
+                >;
 
             //
             // Common scalar / pointer aliases
@@ -283,58 +302,130 @@ mod __runtime {
             // Power / PnP
             //
 
-            pub type WDF_POWER_DEVICE_STATE = core::ffi::c_int;
+            pub type WDF_POWER_DEVICE_STATE =
+                core::ffi::c_int;
 
             pub type PFN_WDF_DEVICE_PREPARE_HARDWARE =
-            Option<unsafe extern "C" fn(WDFDEVICE, PVOID, PVOID) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                        PVOID,
+                        PVOID,
+                    )
+                        -> NTSTATUS,
+                >;
 
             pub type PFN_WDF_DEVICE_RELEASE_HARDWARE =
-            Option<unsafe extern "C" fn(WDFDEVICE, PVOID) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                        PVOID,
+                    )
+                        -> NTSTATUS,
+                >;
 
-            pub type PFN_WDF_DEVICE_D0_ENTRY =
-            Option<unsafe extern "C" fn(WDFDEVICE, WDF_POWER_DEVICE_STATE) -> NTSTATUS>;
+            pub type PFN_WDF_DEVICE_D0_ENTRY = Option<
+                unsafe extern "C" fn(
+                    WDFDEVICE,
+                    WDF_POWER_DEVICE_STATE,
+                )
+                    -> NTSTATUS,
+            >;
 
             pub type PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED =
-            Option<unsafe extern "C" fn(WDFDEVICE, WDF_POWER_DEVICE_STATE) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                        WDF_POWER_DEVICE_STATE,
+                    )
+                        -> NTSTATUS,
+                >;
 
-            pub type PFN_WDF_DEVICE_D0_EXIT =
-            Option<unsafe extern "C" fn(WDFDEVICE, WDF_POWER_DEVICE_STATE) -> NTSTATUS>;
+            pub type PFN_WDF_DEVICE_D0_EXIT = Option<
+                unsafe extern "C" fn(
+                    WDFDEVICE,
+                    WDF_POWER_DEVICE_STATE,
+                )
+                    -> NTSTATUS,
+            >;
 
             pub type PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED =
-            Option<unsafe extern "C" fn(WDFDEVICE, WDF_POWER_DEVICE_STATE) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                        WDF_POWER_DEVICE_STATE,
+                    )
+                        -> NTSTATUS,
+                >;
 
             pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT =
-            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                    )
+                        -> NTSTATUS,
+                >;
 
             pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH =
-            Option<unsafe extern "C" fn(WDFDEVICE)>;
+                Option<unsafe extern "C" fn(WDFDEVICE)>;
 
             pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP =
-            Option<unsafe extern "C" fn(WDFDEVICE)>;
+                Option<unsafe extern "C" fn(WDFDEVICE)>;
 
             pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND =
-            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                    )
+                        -> NTSTATUS,
+                >;
 
             pub type PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART =
-            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                    )
+                        -> NTSTATUS,
+                >;
 
             pub type PFN_WDF_DEVICE_SURPRISE_REMOVAL =
-            Option<unsafe extern "C" fn(WDFDEVICE)>;
+                Option<unsafe extern "C" fn(WDFDEVICE)>;
 
-            pub type PFN_WDF_DEVICE_QUERY_REMOVE =
-            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+            pub type PFN_WDF_DEVICE_QUERY_REMOVE = Option<
+                unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS,
+            >;
 
-            pub type PFN_WDF_DEVICE_QUERY_STOP =
-            Option<unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS>;
+            pub type PFN_WDF_DEVICE_QUERY_STOP = Option<
+                unsafe extern "C" fn(WDFDEVICE) -> NTSTATUS,
+            >;
 
             pub type PFN_WDF_DEVICE_USAGE_NOTIFICATION =
-            Option<unsafe extern "C" fn(WDFDEVICE, core::ffi::c_int, BOOLEAN) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                        core::ffi::c_int,
+                        BOOLEAN,
+                    )
+                        -> NTSTATUS,
+                >;
 
             pub type PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX =
-            Option<unsafe extern "C" fn(WDFDEVICE, core::ffi::c_int, BOOLEAN) -> NTSTATUS>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                        core::ffi::c_int,
+                        BOOLEAN,
+                    )
+                        -> NTSTATUS,
+                >;
 
             pub type PFN_WDF_DEVICE_RELATIONS_QUERY =
-            Option<unsafe extern "C" fn(WDFDEVICE, core::ffi::c_int)>;
+                Option<
+                    unsafe extern "C" fn(
+                        WDFDEVICE,
+                        core::ffi::c_int,
+                    ),
+                >;
             pub type PFILE_OBJECT = *mut _FILE_OBJECT;
             #[macro_export]
             macro_rules! call_unsafe_wdf_function_binding {
@@ -345,9 +436,12 @@ mod __runtime {
             // Base types
             //
 
-            pub(crate) const STATUS_INVALID_PARAMETER: NTSTATUS = 0xC000000Du32 as i32;
-            pub(crate) const STATUS_INTERNAL_ERROR: NTSTATUS = 0xC000000Eu32 as i32;
-            pub(crate) type PWDF_IO_TARGET_OPEN_PARAMS = *mut c_void;
+            pub(crate) const STATUS_INVALID_PARAMETER:
+                NTSTATUS = 0xC000000Du32 as i32;
+            pub(crate) const STATUS_INTERNAL_ERROR:
+                NTSTATUS = 0xC000000Eu32 as i32;
+            pub(crate) type PWDF_IO_TARGET_OPEN_PARAMS =
+                *mut c_void;
             pub type HANDLE = *mut c_void;
             pub type PVOID = *mut c_void;
 
@@ -661,7 +755,8 @@ mod __runtime {
 
             pub mod _WDF_IO_TARGET_STATE {
                 pub type Type = core::ffi::c_int;
-                pub const WdfIoTargetStateUndefined: Type = 0;
+                pub const WdfIoTargetStateUndefined: Type =
+                    0;
                 pub const WdfIoTargetStarted: Type = 1;
                 pub const WdfIoTargetStopped: Type = 2;
                 pub const WdfIoTargetClosedForQueryRemove: Type = 3;
@@ -669,11 +764,13 @@ mod __runtime {
                 pub const WdfIoTargetDeleted: Type = 5;
                 pub const WdfIoTargetPurged: Type = 6;
             }
-            pub type PWDF_IO_TARGET_STATE = *mut _WDF_IO_TARGET_STATE::Type;
+            pub type PWDF_IO_TARGET_STATE =
+                *mut _WDF_IO_TARGET_STATE::Type;
             pub mod _WDF_IO_TARGET_OPEN_TYPE {
                 pub type Type = core::ffi::c_int;
 
-                pub const WdfIoTargetOpenUndefined: Type = 0;
+                pub const WdfIoTargetOpenUndefined: Type =
+                    0;
                 pub const WdfIoTargetOpenUseExistingDevice: Type = 1;
                 pub const WdfIoTargetOpenByName: Type = 2;
                 pub const WdfIoTargetOpenReopen: Type = 3;
@@ -682,16 +779,20 @@ mod __runtime {
             pub use self::_WDF_IO_TARGET_OPEN_TYPE::Type as WDF_IO_TARGET_OPEN_TYPE;
             pub mod _WDF_IO_TARGET_SENT_IO_ACTION {
                 pub type Type = ::core::ffi::c_int;
-                pub const WdfIoTargetSentIoUndefined: Type = 0;
+                pub const WdfIoTargetSentIoUndefined: Type =
+                    0;
                 pub const WdfIoTargetCancelSentIo: Type = 1;
                 pub const WdfIoTargetWaitForSentIoToComplete: Type = 2;
-                pub const WdfIoTargetLeaveSentIoPending: Type = 3;
+                pub const WdfIoTargetLeaveSentIoPending:
+                    Type = 3;
             }
             pub use self::_WDF_IO_TARGET_SENT_IO_ACTION::Type as WDF_IO_TARGET_SENT_IO_ACTION;
             pub mod _WDF_IO_TARGET_PURGE_IO_ACTION {
                 pub type Type = ::core::ffi::c_int;
-                pub const WdfIoTargetPurgeIoUndefined: Type = 0;
-                pub const WdfIoTargetPurgeIoAndWait: Type = 1;
+                pub const WdfIoTargetPurgeIoUndefined:
+                    Type = 0;
+                pub const WdfIoTargetPurgeIoAndWait: Type =
+                    1;
                 pub const WdfIoTargetPurgeIo: Type = 2;
             }
         }
@@ -703,11 +804,29 @@ mod __runtime {
                   It is only for internal crate use."
     )]
     pub mod kmdf {
+        use core::ffi::c_void;
+
+        use wdk_sys::{
+            BOOLEAN, NTSTATUS, PCUNICODE_STRING,
+            PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT,
+            PULONG_PTR, PWDF_FILEOBJECT_CONFIG,
+            PWDF_IO_QUEUE_CONFIG,
+            PWDF_IO_TARGET_OPEN_PARAMS,
+            PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES,
+            PWDF_PNPPOWER_EVENT_CALLBACKS,
+            PWDF_REQUEST_SEND_OPTIONS, PWDFDEVICE_INIT,
+            WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE,
+            WDF_OBJECT_ATTRIBUTES,
+            WDF_REQUEST_SEND_OPTIONS, WDFDEVICE,
+            WDFDEVICE_INIT, WDFDRIVER, WDFIOTARGET,
+            WDFOBJECT, WDFQUEUE, WDFREQUEST,
+            call_unsafe_wdf_function_binding,
+        };
+
+        use crate::bd::WdfFileObjectConfig;
         use crate::call_ntstatus_wdf_unsafe_binding;
         use crate::ioctl::commands::IoCtlCommand;
         use crate::op::NtResult;
-        use core::ffi::c_void;
-        use wdk_sys::{call_unsafe_wdf_function_binding, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDFDEVICE_INIT, PWDF_IO_QUEUE_CONFIG, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_PNPPOWER_EVENT_CALLBACKS, PWDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFREQUEST, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, WDFQUEUE, BOOLEAN, WDF_REQUEST_SEND_OPTIONS, NTSTATUS};
 
         #[inline]
         pub unsafe fn wdf_driver_create(
@@ -856,7 +975,7 @@ mod __runtime {
         }
         #[inline]
         pub unsafe fn wdf_io_queue_get_device(
-            queue: WDFQUEUE
+            queue: WDFQUEUE,
         ) -> WDFDEVICE {
             call_unsafe_wdf_function_binding!(
                 WdfIoQueueGetDevice,
@@ -867,7 +986,7 @@ mod __runtime {
         #[inline]
         pub unsafe fn wdf_request_complete(
             request: WDFREQUEST,
-            status: NTSTATUS
+            status: NTSTATUS,
         ) {
             call_unsafe_wdf_function_binding!(
                 WdfRequestComplete,
@@ -881,7 +1000,7 @@ mod __runtime {
             device: WDFDEVICE,
             config: PWDF_IO_QUEUE_CONFIG,
             attrs: PWDF_OBJECT_ATTRIBUTES,
-            queue: *mut WDFQUEUE
+            queue: *mut WDFQUEUE,
         ) -> NtResult {
             call_ntstatus_wdf_unsafe_binding!(
                 WdfIoQueueCreate,
@@ -893,7 +1012,7 @@ mod __runtime {
         }
 
         pub unsafe fn wdf_device_get_io_queue(
-            queue: WDFQUEUE
+            queue: WDFQUEUE,
         ) -> WDFDEVICE {
             call_unsafe_wdf_function_binding!(
                 WdfIoQueueGetDevice,
@@ -905,7 +1024,7 @@ mod __runtime {
         pub unsafe fn wdf_request_send(
             target: WDFIOTARGET,
             options: PWDF_REQUEST_SEND_OPTIONS,
-            request: WDFREQUEST
+            request: WDFREQUEST,
         ) -> bool {
             call_unsafe_wdf_function_binding!(
                 WdfRequestSend,
@@ -917,7 +1036,7 @@ mod __runtime {
 
         #[inline]
         pub unsafe fn wdf_request_get_status(
-            request: WDFREQUEST
+            request: WDFREQUEST,
         ) -> NtResult {
             call_ntstatus_wdf_unsafe_binding!(
                 WdfRequestGetStatus,
@@ -926,11 +1045,25 @@ mod __runtime {
         }
 
         pub unsafe fn wdf_request_format_using_current_type(
-            request: WDFREQUEST
+            request: WDFREQUEST,
         ) {
             call_unsafe_wdf_function_binding!(
                 WdfRequestFormatRequestUsingCurrentType,
                 request,
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_device_init_set_file_object_config(
+            p_init: PWDFDEVICE_INIT,
+            p_config: PWDF_FILEOBJECT_CONFIG,
+            attrs: PWDF_OBJECT_ATTRIBUTES,
+        ) {
+            call_unsafe_wdf_function_binding!(
+                WdfDeviceInitSetFileObjectConfig,
+                p_init,
+                p_config,
+                attrs
             )
         }
     }
