@@ -7,21 +7,20 @@
 //!  Anyway, this is not the best solution. Think to port the huge amount of Buildable struct in WDF is an impossible task.
 //! The solution is something like NTSTATUS.fmt_status(), a build script generator that auto creates the builders from the C original struct,
 //! So less late or earlier I will implement something like that... but, for now, this is a little version needed for getting work the first examples
+
+use core::ffi::c_int;
 use core::marker::PhantomData;
 use core::ptr;
-use core::ptr::NonNull;
 
 use wdk_sys::_WDF_IO_QUEUE_DISPATCH_TYPE::WdfIoQueueDispatchSequential;
 use wdk_sys::_WDF_TRI_STATE::WdfUseDefault;
-use wdk_sys::{_WDF_IO_QUEUE_CONFIG__bindgen_ty_1, ACCESS_MASK, BOOLEAN, LONGLONG, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDEVICE_OBJECT, PFILE_OBJECT, PFN_WDF_DEVICE_D0_ENTRY, PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED, PFN_WDF_DEVICE_D0_EXIT, PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED, PFN_WDF_DEVICE_PREPARE_HARDWARE, PFN_WDF_DEVICE_QUERY_REMOVE, PFN_WDF_DEVICE_QUERY_STOP, PFN_WDF_DEVICE_RELATIONS_QUERY, PFN_WDF_DEVICE_RELEASE_HARDWARE, PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP, PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH, PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT, PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART, PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND, PFN_WDF_DEVICE_SURPRISE_REMOVAL, PFN_WDF_DEVICE_USAGE_NOTIFICATION, PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX, PFN_WDF_DRIVER_DEVICE_ADD, PFN_WDF_DRIVER_UNLOAD, PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE, PFN_WDF_IO_QUEUE_IO_DEFAULT, PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL, PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL, PFN_WDF_IO_QUEUE_IO_READ, PFN_WDF_IO_QUEUE_IO_RESUME, PFN_WDF_IO_QUEUE_IO_STOP, PFN_WDF_IO_QUEUE_IO_WRITE, PFN_WDF_IO_TARGET_QUERY_REMOVE, PFN_WDF_IO_TARGET_REMOVE_CANCELED, PFN_WDF_IO_TARGET_REMOVE_COMPLETE, PFN_WDF_OBJECT_CONTEXT_CLEANUP, PFN_WDF_OBJECT_CONTEXT_DESTROY, PLONGLONG, PVOID, ULONG, UNICODE_STRING, WDF_DRIVER_CONFIG, WDF_EXECUTION_LEVEL, WDF_IO_QUEUE_CONFIG, WDF_IO_QUEUE_DISPATCH_TYPE, WDF_OBJECT_ATTRIBUTES, WDF_PNPPOWER_EVENT_CALLBACKS, WDF_REQUEST_SEND_OPTIONS, WDF_SYNCHRONIZATION_SCOPE, WDF_TRI_STATE, WDFDRIVER__, WDFOBJECT, WDFDRIVER, WDF_NO_HANDLE};
-
+use wdk_sys::{_WDF_IO_QUEUE_CONFIG__bindgen_ty_1, ACCESS_MASK, BOOLEAN, LONGLONG, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDEVICE_OBJECT, PFILE_OBJECT, PFN_WDF_DEVICE_D0_ENTRY, PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED, PFN_WDF_DEVICE_D0_EXIT, PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED, PFN_WDF_DEVICE_PREPARE_HARDWARE, PFN_WDF_DEVICE_QUERY_REMOVE, PFN_WDF_DEVICE_QUERY_STOP, PFN_WDF_DEVICE_RELATIONS_QUERY, PFN_WDF_DEVICE_RELEASE_HARDWARE, PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP, PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH, PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT, PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART, PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND, PFN_WDF_DEVICE_SURPRISE_REMOVAL, PFN_WDF_DEVICE_USAGE_NOTIFICATION, PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX, PFN_WDF_DRIVER_DEVICE_ADD, PFN_WDF_DRIVER_UNLOAD, PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE, PFN_WDF_IO_QUEUE_IO_DEFAULT, PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL, PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL, PFN_WDF_IO_QUEUE_IO_READ, PFN_WDF_IO_QUEUE_IO_RESUME, PFN_WDF_IO_QUEUE_IO_STOP, PFN_WDF_IO_QUEUE_IO_WRITE, PFN_WDF_IO_TARGET_QUERY_REMOVE, PFN_WDF_IO_TARGET_REMOVE_CANCELED, PFN_WDF_IO_TARGET_REMOVE_COMPLETE, PFN_WDF_OBJECT_CONTEXT_CLEANUP, PFN_WDF_OBJECT_CONTEXT_DESTROY, PLONGLONG, PVOID, ULONG, UNICODE_STRING, WDF_DRIVER_CONFIG, WDF_EXECUTION_LEVEL, WDF_IO_QUEUE_CONFIG, WDF_IO_QUEUE_DISPATCH_TYPE, WDF_OBJECT_ATTRIBUTES, WDF_PNPPOWER_EVENT_CALLBACKS, WDF_REQUEST_SEND_OPTIONS, WDF_SYNCHRONIZATION_SCOPE, WDF_TRI_STATE, WDFDRIVER__, WDFOBJECT, WDFDRIVER, WDF_NO_HANDLE, WDF_FILEOBJECT_CONFIG, PFN_WDF_DEVICE_FILE_CREATE, PFN_WDF_FILE_CLOSE, PFN_WDF_FILE_CLEANUP};
+use wdk_sys::_WDF_FILEOBJECT_CLASS::WdfFileObjectNotRequired;
 use crate::ctx::WdfCtxNoneDesc;
 use crate::op::{AsBuilder, AsCtxDescriptor, AsRaw};
 #[cfg(feature = "test-runtime")]
 use crate::rt::wdk_sys;
-use crate::vals::{
-    WdfExecutionLevel, WdfIoTargetOpenType, WdfSyncScope,
-};
+use crate::vals::{WdfExecutionLevel, WdfFileObjClass, WdfIoQueueDispatchType, WdfIoTargetOpenType, WdfSyncScope, WdfTriState};
 use crate::{Handle, const_size_to_ulong};
 
 #[derive(Default)]
@@ -108,8 +107,8 @@ pub struct WdfDevicePnpPowerSetup {
 }
 
 pub struct WdfIoQueueConfig {
-    pub dispatch_type: WDF_IO_QUEUE_DISPATCH_TYPE,
-    pub power_managed: WDF_TRI_STATE,
+    pub dispatch_type: WdfIoQueueDispatchType,
+    pub power_managed: WdfTriState,
     pub allow_zero_length_requests: bool,
     pub default_queue: bool,
     pub on_io_default: PFN_WDF_IO_QUEUE_IO_DEFAULT,
@@ -130,8 +129,8 @@ pub struct WdfIoQueueConfig {
 impl Default for WdfIoQueueConfig {
     fn default() -> Self {
         Self {
-            dispatch_type: WdfIoQueueDispatchSequential,
-            power_managed: WdfUseDefault,
+            dispatch_type: WdfIoQueueDispatchType::Sequential,
+            power_managed: Default::default(),
             allow_zero_length_requests: false,
             default_queue: false,
             on_io_default: None,
@@ -157,8 +156,8 @@ impl AsBuilder for WdfIoQueueConfig {
     fn build(&self) -> Self::Descriptor<'_> {
         WDF_IO_QUEUE_CONFIG {
             Size: const_size_to_ulong!(WDF_IO_QUEUE_CONFIG),
-            DispatchType: self.dispatch_type,
-            PowerManaged: self.power_managed,
+            DispatchType: self.dispatch_type.into(),
+            PowerManaged: self.power_managed.into(),
             AllowZeroLengthRequests: self
                 .allow_zero_length_requests
                 as BOOLEAN,
@@ -179,15 +178,6 @@ impl AsBuilder for WdfIoQueueConfig {
     }
 }
 
-#[derive(Default)]
-pub struct WdfDevicePropsSetup {
-    pub(crate) is_filter: bool,
-}
-#[derive(Default)]
-pub struct WdfDeviceConf {
-    pub pnp_power_setup: WdfDevicePnpPowerSetup,
-    pub props_setup: WdfDevicePropsSetup,
-}
 pub struct WdfObjAttrs<D: AsCtxDescriptor = WdfCtxNoneDesc>
 {
     pub on_cleanup: PFN_WDF_OBJECT_CONTEXT_CLEANUP,
@@ -350,7 +340,6 @@ pub struct WdfRequestSendOption {
     pub flags: core::ffi::c_int,
     pub timeout: core::ffi::c_ulonglong,
 }
-
 impl AsBuilder for WdfRequestSendOption {
     type Descriptor<'a> = WDF_REQUEST_SEND_OPTIONS;
 
@@ -361,6 +350,43 @@ impl AsBuilder for WdfRequestSendOption {
             ),
             Flags: self.flags as ULONG,
             Timeout: self.timeout as LONGLONG,
+        }
+    }
+}
+
+pub struct WdfFileObjectConfig {
+    on_device_file_create: PFN_WDF_DEVICE_FILE_CREATE,
+    on_file_close: PFN_WDF_FILE_CLOSE,
+    on_file_cleanup: PFN_WDF_FILE_CLEANUP,
+    auto_forward_cleanup_close: c_int,
+    file_object_class: WdfFileObjClass,
+}
+
+
+impl Default for WdfFileObjectConfig {
+    fn default() -> Self {
+        Self {
+            on_device_file_create: None,
+            on_file_close: None,
+            on_file_cleanup: None,
+            auto_forward_cleanup_close: Default::default(),
+            file_object_class: WdfFileObjClass::CanBeOptional.into(),
+        }
+    }
+}
+impl AsBuilder for WdfFileObjectConfig {
+    type Descriptor<'a>
+    = WDF_FILEOBJECT_CONFIG;
+
+    #[inline]
+    fn build(&self) -> Self::Descriptor<'_> {
+        WDF_FILEOBJECT_CONFIG {
+            Size: const_size_to_ulong!(WDF_FILEOBJECT_CONFIG),
+            EvtDeviceFileCreate: self.on_device_file_create,
+            EvtFileClose: self.on_file_close,
+            EvtFileCleanup: self.on_file_cleanup,
+            AutoForwardCleanupClose: self.auto_forward_cleanup_close,
+            FileObjectClass: self.file_object_class.into(),
         }
     }
 }
