@@ -1,7 +1,9 @@
 mod private {
-    use core::ptr::NonNull;
+    #[cfg(feature = "test-runtime")]
+    use crate::rt::wdk_sys;
 
-    use crate::rt::wdk_sys::HANDLE;
+    use core::ptr::NonNull;
+    use wdk_sys::HANDLE;
 
     /// Encapsulates a kernel object or resource [`HANDLE`] of type `H`.
     ///
@@ -98,6 +100,9 @@ mod private {
     pub struct Handle<H = HANDLE>(NonNull<H>);
 
     mod impls {
+        #[cfg(feature = "test-runtime")]
+        use crate::rt::wdk_sys;
+
         use core::ops::Deref;
         use core::ptr::NonNull;
 
@@ -152,6 +157,9 @@ mod private {
         #[cfg(feature = "minimal-runtime")]
         mod kmdf {
             mod object {
+                #[cfg(feature = "test-runtime")]
+                use crate::rt::wdk_sys;
+
                 use core::ptr;
                 use core::ptr::NonNull;
 
@@ -221,6 +229,9 @@ mod private {
                 }
             }
             mod device_init {
+                #[cfg(feature = "test-runtime")]
+                use crate::rt::wdk_sys;
+
                 use core::ptr;
 
                 use wdk_sys::WDFDEVICE_INIT;
@@ -261,6 +272,9 @@ mod private {
                 }
             }
             mod device {
+                #[cfg(feature = "test-runtime")]
+                use crate::rt::wdk_sys;
+
                 use core::ptr;
                 use core::ptr::NonNull;
 
@@ -393,6 +407,7 @@ mod private {
                     pub fn from_queue(
                         queue: NonNull<WDFQUEUE__>,
                     ) -> Option<Self> {
+                        #[cfg(feature = "kmdf-runtime")]
                         let device = NonNull::new(
                             unsafe {
                                 __cb::wdf_io_queue_get_device(
@@ -400,6 +415,8 @@ mod private {
                             )
                             },
                         )?;
+                        #[cfg(feature = "test-runtime")]
+                        let device = NonNull::dangling();
 
                         Some(Self::new(device))
                     }
@@ -418,6 +435,9 @@ mod private {
                 }
             }
             mod driver {
+                #[cfg(feature = "test-runtime")]
+                use crate::rt::wdk_sys;
+
                 use core::ptr;
                 use core::ptr::NonNull;
 
@@ -497,6 +517,9 @@ mod private {
                     for Handle<WDFDRIVER__> {}
             }
             mod io_target {
+                #[cfg(feature = "test-runtime")]
+                use crate::rt::wdk_sys;
+
                 #[cfg(feature = "kmdf-runtime")]
                 use core::ptr;
                 use core::ptr::NonNull;
@@ -813,6 +836,7 @@ mod private {
                     ) -> Option<()> {
                         let mut conf = options.build();
 
+                        #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_request_send(
                                 self.as_ptr().cast_mut(),
@@ -821,10 +845,16 @@ mod private {
                             )
                             .then_some(())
                         }
+
+                        #[cfg(feature = "test-runtime")]
+                        Some(())
                     }
                 }
             }
             mod queue {
+                #[cfg(feature = "test-runtime")]
+                use crate::rt::wdk_sys;
+
                 use core::ptr;
                 use core::ptr::NonNull;
 
@@ -914,6 +944,9 @@ mod private {
                 }
             }
             mod w_request {
+                #[cfg(feature = "test-runtime")]
+                use crate::rt::wdk_sys;
+
                 use wdk_sys::WDFREQUEST__;
 
                 use crate::Handle;
@@ -941,6 +974,7 @@ mod private {
                     pub fn format_using_current_type(
                         self,
                     ) -> Self {
+                        #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_request_format_using_current_type(
                                 self.as_ptr().cast_mut(),

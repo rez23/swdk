@@ -11,6 +11,15 @@ mod __runtime {
 
         pub mod wdk_sys {
             use core::ffi::c_void;
+
+            pub type LONGLONG = i64;
+            #[repr(C)]
+            #[derive(Debug, Default, Copy, Clone)]
+            pub struct WDF_REQUEST_SEND_OPTIONS {
+                pub Size: crate::rt::wdk_sys::ULONG,
+                pub Flags: crate::rt::wdk_sys::ULONG,
+                pub Timeout: crate::rt::wdk_sys::LONGLONG,
+            }
             #[repr(C)]
             #[derive(Default, Copy, Clone)]
             pub struct WDF_PNPPOWER_EVENT_CALLBACKS {
@@ -246,10 +255,30 @@ mod __runtime {
             pub type PLONGLONG = *mut i64;
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct _FILE_OBJECT {
                 _priv: [u8; 0],
             }
 
+            #[repr(C)]
+            #[derive(Default, Copy, Clone)]
+            pub struct _WDFDEVICE_INIT {
+                _priv: [u8; 0],
+            }
+
+            #[repr(C)]
+            #[derive(Default, Copy, Clone)]
+            pub struct WDFDEVICE_INIT {
+                _priv: [u8; 0],
+            }
+
+            #[repr(C)]
+            #[derive(Default, Copy, Clone)]
+            pub struct _DRIVER_OBJECT {
+                _priv: [u8; 0],
+            }
+
+            pub type DRIVER_OBJECT = *mut _DRIVER_OBJECT;
             //
             // Power / PnP
             //
@@ -334,16 +363,19 @@ mod __runtime {
             //
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct DRIVER_OBJECT__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct DEVICE_OBJECT__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct IRP__ {
                 _priv: [u8; 0],
             }
@@ -357,6 +389,7 @@ mod __runtime {
             //
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct DEVICE_INIT {
                 _priv: [u8; 0],
             }
@@ -368,46 +401,55 @@ mod __runtime {
             //
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFOBJECT__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFDEVICE__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFDRIVER__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFMEMORY__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFREQUEST__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFQUEUE__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFIOTARGET__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFCOLLECTION__ {
                 _priv: [u8; 0],
             }
 
             #[repr(C)]
+            #[derive(Default, Copy, Clone)]
             pub struct WDFSTRING__ {
                 _priv: [u8; 0],
             }

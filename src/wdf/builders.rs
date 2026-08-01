@@ -7,54 +7,18 @@
 //!  Anyway, this is not the best solution. Think to port the huge amount of Buildable struct in WDF is an impossible task.
 //! The solution is something like NTSTATUS.fmt_status(), a build script generator that auto creates the builders from the C original struct,
 //! So less late or earlier I will implement something like that... but, for now, this is a little version needed for getting work the first examples
-
 use core::marker::PhantomData;
 use core::ptr;
 use core::ptr::NonNull;
-use wdk_sys::{LONGLONG, WDFDRIVER__, WDF_NO_HANDLE, WDF_REQUEST_SEND_OPTIONS};
+
 use wdk_sys::_WDF_IO_QUEUE_DISPATCH_TYPE::WdfIoQueueDispatchSequential;
 use wdk_sys::_WDF_TRI_STATE::WdfUseDefault;
+use wdk_sys::{_WDF_IO_QUEUE_CONFIG__bindgen_ty_1, ACCESS_MASK, BOOLEAN, LONGLONG, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDEVICE_OBJECT, PFILE_OBJECT, PFN_WDF_DEVICE_D0_ENTRY, PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED, PFN_WDF_DEVICE_D0_EXIT, PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED, PFN_WDF_DEVICE_PREPARE_HARDWARE, PFN_WDF_DEVICE_QUERY_REMOVE, PFN_WDF_DEVICE_QUERY_STOP, PFN_WDF_DEVICE_RELATIONS_QUERY, PFN_WDF_DEVICE_RELEASE_HARDWARE, PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP, PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH, PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT, PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART, PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND, PFN_WDF_DEVICE_SURPRISE_REMOVAL, PFN_WDF_DEVICE_USAGE_NOTIFICATION, PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX, PFN_WDF_DRIVER_DEVICE_ADD, PFN_WDF_DRIVER_UNLOAD, PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE, PFN_WDF_IO_QUEUE_IO_DEFAULT, PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL, PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL, PFN_WDF_IO_QUEUE_IO_READ, PFN_WDF_IO_QUEUE_IO_RESUME, PFN_WDF_IO_QUEUE_IO_STOP, PFN_WDF_IO_QUEUE_IO_WRITE, PFN_WDF_IO_TARGET_QUERY_REMOVE, PFN_WDF_IO_TARGET_REMOVE_CANCELED, PFN_WDF_IO_TARGET_REMOVE_COMPLETE, PFN_WDF_OBJECT_CONTEXT_CLEANUP, PFN_WDF_OBJECT_CONTEXT_DESTROY, PLONGLONG, PVOID, ULONG, UNICODE_STRING, WDF_DRIVER_CONFIG, WDF_EXECUTION_LEVEL, WDF_IO_QUEUE_CONFIG, WDF_IO_QUEUE_DISPATCH_TYPE, WDF_OBJECT_ATTRIBUTES, WDF_PNPPOWER_EVENT_CALLBACKS, WDF_REQUEST_SEND_OPTIONS, WDF_SYNCHRONIZATION_SCOPE, WDF_TRI_STATE, WDFDRIVER__, WDFOBJECT, WDFDRIVER, WDF_NO_HANDLE};
+
 use crate::ctx::WdfCtxNoneDesc;
 use crate::op::{AsBuilder, AsCtxDescriptor, AsRaw};
-use crate::rt::wdk_sys::{
-    _WDF_IO_QUEUE_CONFIG__bindgen_ty_1, ACCESS_MASK,
-    BOOLEAN, PCUNICODE_STRING,
-    PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDEVICE_OBJECT,
-    PFILE_OBJECT, PFN_WDF_DEVICE_D0_ENTRY,
-    PFN_WDF_DEVICE_D0_ENTRY_POST_INTERRUPTS_ENABLED,
-    PFN_WDF_DEVICE_D0_EXIT,
-    PFN_WDF_DEVICE_D0_EXIT_PRE_INTERRUPTS_DISABLED,
-    PFN_WDF_DEVICE_PREPARE_HARDWARE,
-    PFN_WDF_DEVICE_QUERY_REMOVE, PFN_WDF_DEVICE_QUERY_STOP,
-    PFN_WDF_DEVICE_RELATIONS_QUERY,
-    PFN_WDF_DEVICE_RELEASE_HARDWARE,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_CLEANUP,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_FLUSH,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_INIT,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_RESTART,
-    PFN_WDF_DEVICE_SELF_MANAGED_IO_SUSPEND,
-    PFN_WDF_DEVICE_SURPRISE_REMOVAL,
-    PFN_WDF_DEVICE_USAGE_NOTIFICATION,
-    PFN_WDF_DEVICE_USAGE_NOTIFICATION_EX,
-    PFN_WDF_DRIVER_DEVICE_ADD, PFN_WDF_DRIVER_UNLOAD,
-    PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE,
-    PFN_WDF_IO_QUEUE_IO_DEFAULT,
-    PFN_WDF_IO_QUEUE_IO_DEVICE_CONTROL,
-    PFN_WDF_IO_QUEUE_IO_INTERNAL_DEVICE_CONTROL,
-    PFN_WDF_IO_QUEUE_IO_READ, PFN_WDF_IO_QUEUE_IO_RESUME,
-    PFN_WDF_IO_QUEUE_IO_STOP, PFN_WDF_IO_QUEUE_IO_WRITE,
-    PFN_WDF_IO_TARGET_QUERY_REMOVE,
-    PFN_WDF_IO_TARGET_REMOVE_CANCELED,
-    PFN_WDF_IO_TARGET_REMOVE_COMPLETE,
-    PFN_WDF_OBJECT_CONTEXT_CLEANUP,
-    PFN_WDF_OBJECT_CONTEXT_DESTROY, PLONGLONG, PVOID,
-    ULONG, UNICODE_STRING, WDF_DRIVER_CONFIG,
-    WDF_EXECUTION_LEVEL, WDF_IO_QUEUE_CONFIG,
-    WDF_IO_QUEUE_DISPATCH_TYPE, WDF_OBJECT_ATTRIBUTES,
-    WDF_PNPPOWER_EVENT_CALLBACKS,
-    WDF_SYNCHRONIZATION_SCOPE, WDF_TRI_STATE, WDFDRIVER,
-    WDFOBJECT,
-};
+#[cfg(feature = "test-runtime")]
+use crate::rt::wdk_sys;
 use crate::vals::{
     WdfExecutionLevel, WdfIoTargetOpenType, WdfSyncScope,
 };
@@ -160,7 +124,7 @@ pub struct WdfIoQueueConfig {
     pub on_io_canceled_on_queue:
         PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE,
     pub settings: _WDF_IO_QUEUE_CONFIG__bindgen_ty_1,
-    pub driver: NonNull<WDFDRIVER__>,
+    pub driver: WDFDRIVER,
 }
 
 impl Default for WdfIoQueueConfig {
@@ -179,7 +143,7 @@ impl Default for WdfIoQueueConfig {
             on_io_resume: None,
             on_io_canceled_on_queue: None,
             settings: Default::default(),
-            driver: NonNull::dangling(),
+            driver: WDF_NO_HANDLE.cast(),
         }
     }
 }
@@ -210,7 +174,7 @@ impl AsBuilder for WdfIoQueueConfig {
             EvtIoCanceledOnQueue: self
                 .on_io_canceled_on_queue,
             Settings: self.settings,
-            Driver: self.driver.as_ptr(),
+            Driver: self.driver,
         }
     }
 }
@@ -246,7 +210,7 @@ impl<D: AsCtxDescriptor> AsBuilder for WdfObjAttrs<D> {
             .map_or(ptr::null_mut(), |ptr| ptr.raw());
 
         let unique: PCWDF_OBJECT_CONTEXT_TYPE_INFO =
-            D::descriptor().unwrap_or(ptr::null());
+            D::descriptor().unwrap_or(ptr::null_mut());
 
         WDF_OBJECT_ATTRIBUTES {
             Size: const_size_to_ulong!(
@@ -383,7 +347,7 @@ impl AsBuilder for WdfDevicePnpPowerSetup {
 
 #[derive(Default)]
 pub struct WdfRequestSendOption {
-    pub flags:core::ffi::c_int,
+    pub flags: core::ffi::c_int,
     pub timeout: core::ffi::c_ulonglong,
 }
 

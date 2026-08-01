@@ -1060,12 +1060,12 @@ mod _operators {
         fn from_kernel(
             owned: NonNull<Self::Accessor>,
             conf: Self::Conf,
-            attrs: WdfObjAttrs,
+            attrs: Option<WdfObjAttrs>,
         ) -> NtResult<Self> {
             Self::from_kernel_explicit::<WdfCtxNoneDesc>(
                 owned,
                 Some(conf),
-                Some(attrs),
+                attrs,
             )
         }
     }
