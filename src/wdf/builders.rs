@@ -10,9 +10,10 @@
 
 use core::marker::PhantomData;
 use core::ptr;
-
-use wdk_sys::{LONGLONG, WDF_REQUEST_SEND_OPTIONS};
-
+use core::ptr::NonNull;
+use wdk_sys::{LONGLONG, WDFDRIVER__, WDF_NO_HANDLE, WDF_REQUEST_SEND_OPTIONS};
+use wdk_sys::_WDF_IO_QUEUE_DISPATCH_TYPE::WdfIoQueueDispatchSequential;
+use wdk_sys::_WDF_TRI_STATE::WdfUseDefault;
 use crate::ctx::WdfCtxNoneDesc;
 use crate::op::{AsBuilder, AsCtxDescriptor, AsRaw};
 use crate::rt::wdk_sys::{
@@ -142,7 +143,6 @@ pub struct WdfDevicePnpPowerSetup {
         PFN_WDF_DEVICE_RELATIONS_QUERY,
 }
 
-#[derive(Default)]
 pub struct WdfIoQueueConfig {
     pub dispatch_type: WDF_IO_QUEUE_DISPATCH_TYPE,
     pub power_managed: WDF_TRI_STATE,
@@ -160,7 +160,28 @@ pub struct WdfIoQueueConfig {
     pub on_io_canceled_on_queue:
         PFN_WDF_IO_QUEUE_IO_CANCELED_ON_QUEUE,
     pub settings: _WDF_IO_QUEUE_CONFIG__bindgen_ty_1,
-    pub driver: WDFDRIVER,
+    pub driver: NonNull<WDFDRIVER__>,
+}
+
+impl Default for WdfIoQueueConfig {
+    fn default() -> Self {
+        Self {
+            dispatch_type: WdfIoQueueDispatchSequential,
+            power_managed: WdfUseDefault,
+            allow_zero_length_requests: false,
+            default_queue: false,
+            on_io_default: None,
+            on_io_read: None,
+            on_io_write: None,
+            on_io_device_control: None,
+            on_io_internal_device_control: None,
+            on_io_stop: None,
+            on_io_resume: None,
+            on_io_canceled_on_queue: None,
+            settings: Default::default(),
+            driver: NonNull::dangling(),
+        }
+    }
 }
 
 impl AsBuilder for WdfIoQueueConfig {
@@ -188,8 +209,8 @@ impl AsBuilder for WdfIoQueueConfig {
             EvtIoResume: self.on_io_resume,
             EvtIoCanceledOnQueue: self
                 .on_io_canceled_on_queue,
-            Settings: Default::default(),
-            Driver: WDFDRIVER::default(),
+            Settings: self.settings,
+            Driver: self.driver.as_ptr(),
         }
     }
 }
@@ -362,8 +383,8 @@ impl AsBuilder for WdfDevicePnpPowerSetup {
 
 #[derive(Default)]
 pub struct WdfRequestSendOption {
-    pub flags: u64,
-    pub timeout: u128,
+    pub flags:core::ffi::c_int,
+    pub timeout: core::ffi::c_ulonglong,
 }
 
 impl AsBuilder for WdfRequestSendOption {
