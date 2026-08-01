@@ -1,8 +1,8 @@
 use std::ptr::{dangling, NonNull};
+use swdk::rt::wdk_sys::WDFIOTARGET__;
 use swdk::Handle;
 use swdk::ioctl::IoCtlRequest;
-use swdk::op::AsWdfOwned;
-use swdk::raws::IoTarget;
+use swdk::op::AsKernelType;
 use swdk::vals::WdfIoTargetState;
 
 use swdk::rt::wdk_sys::{
@@ -27,7 +27,7 @@ static mut WDFDEVICE: WDFIOTARGET =
 #[test]
 fn read_status_returns_started() {
     let target =
-        Handle::<IoTarget>::new(NonNull::dangling());
+        Handle::<WDFIOTARGET__>::new(NonNull::dangling());
 
     assert_eq!(
         target.read_status(),
@@ -38,7 +38,7 @@ fn read_status_returns_started() {
 #[test]
 fn send_ioctl_returns_ok() {
     let target =
-        Handle::<IoTarget>::new(NonNull::dangling());
+        Handle::<WDFIOTARGET__>::new(NonNull::dangling());
 
     let request =
         IoCtlRequest::new(0x1234, EchoRequest::default());
@@ -52,7 +52,7 @@ fn send_ioctl_returns_ok() {
 #[test]
 fn send_ioctl_returns_default_response() {
     let target =
-        Handle::<IoTarget>::new(NonNull::dangling());
+        Handle::<WDFIOTARGET__>::new(NonNull::dangling());
 
     let request =
         IoCtlRequest::new(0x1234, EchoRequest::default());
