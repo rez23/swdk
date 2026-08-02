@@ -1,3 +1,7 @@
+use std::collections::BTreeSet;
+#[cfg(feature = "kmdf-runtime")]
+use std::{fs, io, path::Path};
+
 #[cfg(feature = "kmdf-runtime")]
 use regex::Regex;
 
@@ -5,6 +9,24 @@ use regex::Regex;
 struct NtStatusEntry {
     macro_name: String,
     value: String,
+}
+#[cfg(feature = "kmdf-runtime")]
+pub fn generate_is_wdf_type_impls(
+    types: &[String],
+) -> String {
+    use std::collections::BTreeSet;
+
+    let mut generated = String::new();
+
+    for name in
+        types.iter().cloned().collect::<BTreeSet<_>>()
+    {
+        generated.push_str(&format!(
+            "impl crate::op::marks::IsWdfType for wdk_sys::{name} {{}}\n"
+        ));
+    }
+
+    generated
 }
 
 #[cfg(feature = "kmdf-runtime")]
@@ -27,11 +49,9 @@ fn collect_ntstatus_values_from_wdf_header(
             continue;
         };
 
-        let macro_name =
-            captures.get(1).unwrap().as_str();
+        let macro_name = captures.get(1).unwrap().as_str();
 
-        let value =
-            captures.get(2).unwrap().as_str();
+        let value = captures.get(2).unwrap().as_str();
 
         entries.push(NtStatusEntry {
             macro_name: macro_name.to_string(),
@@ -41,7 +61,6 @@ fn collect_ntstatus_values_from_wdf_header(
 
     Ok(entries)
 }
-
 
 #[cfg(feature = "kmdf-runtime")]
 fn generate_nt_status_as_ntstatus_impl(
@@ -59,18 +78,16 @@ fn generate_nt_status_as_ntstatus_impl(
     );
 
     for status in statuses {
-        let raw =
-            u32::from_str_radix(
-                status.value.trim_start_matches("0x"),
-                16,
-            )
-                .unwrap();
+        let raw = u32::from_str_radix(
+            status.value.trim_start_matches("0x"),
+            16,
+        )
+        .unwrap();
 
         let signed = raw as i32;
         out.push_str(&format!(
             "                    {} => \"{}\",\n",
-            signed,
-            status.macro_name,
+            signed, status.macro_name,
         ));
     }
 
@@ -95,11 +112,37 @@ fn write_generated_file(
         std::env::var("OUT_DIR").unwrap(),
     );
 
-    std::fs::write(
-        out_dir.join("ntstatus.rs"),
-        generated,
-    )
+    fs::write(out_dir.join("wdkgen.rs"), generated)
 }
+use std::sync::{Arc, Mutex};
+
+use bindgen::callbacks::ParseCallbacks;
+
+#[derive(Default, Debug)]
+pub struct WdfTypeCollector {
+    pub types: Arc<Mutex<BTreeSet<String>>>,
+}
+
+use bindgen::callbacks::ItemInfo;
+
+impl ParseCallbacks for WdfTypeCollector {
+    fn item_name(
+        &self,
+        item_info: ItemInfo<'_>,
+    ) -> Option<String> {
+        let name = item_info.name;
+
+        if name.starts_with("WDF") && name.ends_with("__") {
+            self.types
+                .lock()
+                .unwrap()
+                .insert(name.to_string());
+        }
+
+        None
+    }
+}
+
 #[cfg(feature = "kmdf-runtime")]
 fn main() -> Result<(), wdk_build::ConfigError> {
     wdk_build::configure_wdk_library_build_and_then(
@@ -114,6 +157,51 @@ fn main() -> Result<(), wdk_build::ConfigError> {
                     wdk_build::ConfigError::WdkContentRootDetectionError,
                 )?;
 
+            let collector = WdfTypeCollector::default();
+            let collected = collector.types.clone();
+
+            let header = config
+                .bindgen_header_contents([
+                    wdk_build::ApiSubset::Base,
+                    wdk_build::ApiSubset::Wdf,
+                ])
+                .map_err(|_| {
+                    wdk_build::ConfigError::WdkContentRootDetectionError
+                })?;
+
+            let mut builder = bindgen::Builder::default()
+                .header_contents("wrapper.h", &header)
+                .parse_callbacks(Box::new(collector));
+
+            for path in config.include_paths()? {
+                builder = builder.clang_arg(format!(
+                    "-I{}",
+                    path.display()
+                ));
+            }
+
+            builder = builder.clang_args(
+                wdk_build::Config::wdk_bindgen_compiler_flags(),
+            );
+
+            for (name, value) in
+                config.preprocessor_definitions()
+            {
+                builder = match value {
+                    Some(v) => builder
+                        .clang_arg(format!("-D{name}={v}")),
+                    None => builder
+                        .clang_arg(format!("-D{name}")),
+                };
+            }
+
+            let _bindings = builder
+                .generate()
+                .map_err(|e| {
+                    println!("cargo:warning=bindgen error: {e}");
+                    wdk_build::ConfigError::WdkContentRootDetectionError
+                })?;
+
             let statuses =
                 collect_ntstatus_values_from_wdf_header(&ntstatus)
                     .map_err(|_| {
@@ -126,14 +214,35 @@ fn main() -> Result<(), wdk_build::ConfigError> {
                 ntstatus.display()
             );
 
-            let generated =
-                generate_nt_status_as_ntstatus_impl(&statuses);
+            let ntstatus_bindings =
+                generate_nt_status_as_ntstatus_impl(
+                    &statuses,
+                );
+
+            let wdf_types = collected.lock().unwrap();
+
+            println!(
+                "cargo:warning=Collected {} WDF types",
+                wdf_types.len()
+            );
+
+            let wdf_types_bindings =
+                generate_is_wdf_type_impls(
+                    &wdf_types
+                        .iter()
+                        .cloned()
+                        .collect::<Vec<_>>(),
+                );
+
+            let generated = format!(
+                "{}\n{}\n",
+                ntstatus_bindings, wdf_types_bindings
+            );
 
             write_generated_file(&generated)
                 .map_err(|_| {
                     wdk_build::ConfigError::WdkContentRootDetectionError
                 })?;
-
             Ok(())
         },
     )

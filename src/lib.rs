@@ -62,7 +62,7 @@ mod __public_api {
 
     /// Contains WDF context types
     pub use crate::wdf::context as ctx;
-    pub use crate::wdf::handle::*;
+    pub use crate::wdf::handle::Handle;
     pub use crate::wdf::ioctl;
 
     /// Contains WDF operators
