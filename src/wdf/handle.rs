@@ -112,10 +112,12 @@ mod private {
 
         impl<'a, H: IsWdfType> Handle<'a, H> {
             pub fn new(raw: NonNull<H>) -> Self {
-                // this is safe because HANDLE is WDF type
+                // SAFETY: this is safe because HANDLE
+                //         types are passed by WDF
                 Self(unsafe { raw.as_ref() })
             }
         }
+
         impl<'a, H: IsWdfType> HandleMut<'a, H> {
             pub fn new(mut raw: NonNull<H>) -> Self {
                 Self(unsafe { raw.as_mut() })
@@ -300,22 +302,22 @@ mod private {
                 impl<'a> Handle<'a, WDFDEVICE_INIT> {
                     pub fn with_filter(
                         self,
-                    ) -> NtResult<Self>
+                    ) -> Option<Self>
                     {
                         #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_f_do_init_set_filter(
-                                self.as_non_null().ok_or(STATUS_INVALID_PARAMETER)?.as_ptr().cast(),
+                                self.as_non_null()?.as_ptr().cast(),
                             )
                         };
 
-                        Ok(self)
+                        Some(self)
                     }
 
                     pub fn with_pnp_setup(
                         self,
                         setup: WdfDevicePnpPowerSetup,
-                    ) -> NtResult<Self>
+                    ) -> Option<Self>
                     {
                         #[cfg(feature = "kmdf-runtime")]
                         let pnp_setup = setup.build();
@@ -323,11 +325,11 @@ mod private {
                         #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_device_init_set_pnp_power_event_callbacks(
-                                self.as_non_null().ok_or(STATUS_INVALID_PARAMETER)?.as_ptr(),
+                                self.as_non_null()?.as_ptr(),
                                 ptr::from_ref(&pnp_setup).cast_mut(),
                             )
                         };
-                        Ok(self)
+                        Some(self)
                     }
 
                     #[cfg(feature = "kmdf-runtime")]
@@ -774,14 +776,14 @@ mod private {
                     #[inline]
                     pub fn read_status(
                         &self,
-                    ) -> NtResult<WdfIoTargetState>
+                    ) -> Option<WdfIoTargetState>
                     {
                         #[cfg(feature = "kmdf-runtime")]
                         {
-                            Ok(WdfIoTargetState::from(
+                            Some(WdfIoTargetState::from(
                                 unsafe {
                                     wdf_target_io_get_state(
-                                    self.as_non_null().ok_or(STATUS_INVALID_PARAMETER)?
+                                    self.as_non_null()?
                                         .as_ptr()
                                 )
                                 },
@@ -867,9 +869,7 @@ mod private {
                     {
                         // if device is not started, return error
                         let device_status =
-                            self.read_status().map_err(
-                                |_| DeviceHasNoIoTarget,
-                            )?;
+                            self.read_status().ok_or(DeviceHasNoIoTarget)?;
                         let WdfIoTargetState::Started =
                             device_status
                         else {
