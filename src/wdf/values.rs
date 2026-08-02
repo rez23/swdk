@@ -229,6 +229,98 @@ mod _values {
 
     pub type WdfTypeAccessorNotNeeded = ();
     impl IsWdfType for WdfTypeAccessorNotNeeded {}
+    #[repr(i32)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
+    pub enum WdfRequestType {
+        Create = 0,
+        CreateNamedPipe = 1,
+        Close = 2,
+        Read = 3,
+        Write = 4,
+        QueryInformation = 5,
+        SetInformation = 6,
+        QueryEA = 7,
+        SetEA = 8,
+        FlushBuffers = 9,
+        QueryVolumeInformation = 10,
+        SetVolumeInformation = 11,
+        DirectoryControl = 12,
+        FileSystemControl = 13,
+        DeviceControl = 14,
+        DeviceControlInternal = 15,
+        Shutdown = 16,
+        LockControl = 17,
+        Cleanup = 18,
+        CreateMailSlot = 19,
+        QuerySecurity = 20,
+        SetSecurity = 21,
+        Power = 22,
+        SystemControl = 23,
+        DeviceChange = 24,
+        QueryQuota = 25,
+        SetQuota = 26,
+        Pnp = 27,
+        Other = 28,
+        Usb = 64,
+        NoFormat = 255,
+        Max = 256,
+    }
+    #[repr(i32)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
+    pub enum WdfRequestReuseFlags {
+        NoFlags = 0,
+        SetNewIrp = 1,
+    }
+    #[repr(i32)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
+    pub enum WdfRequestStopActionFlags {
+        Invalid = 0,
+        Suspend = 1,
+        Purge = 2,
+        RequestCancelable = 268435456,
+    }
+    #[repr(i32)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
+    pub enum WdfRequestSendOptionsFlags {
+        Timeout = 1,
+        Synchronous = 2,
+        IgnoreTargetState = 4,
+        SendAndForget = 8,
+        ImpersonateClient = 65536,
+        ImpersonationIgnoreFailure = 131072,
+    }
 }
 
 pub use _values::*;
