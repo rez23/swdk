@@ -1,14 +1,4 @@
-mod _concepts {
-    use crate::rt::wdk_sys::NTSTATUS;
-
-    pub type NtResult<T = ()> = Result<T, NTSTATUS>;
-}
-
-pub mod marks {
-    pub trait IsWdfType {}
-}
 mod _operators {
-    use alloc::string::String;
     use alloc::vec::Vec;
     use core::borrow::Borrow;
     use core::ffi::c_void;
@@ -16,15 +6,17 @@ mod _operators {
     use core::ptr;
     use core::ptr::NonNull;
 
-    use crate::{Handle, HandleMut};
     use crate::bd::WdfObjAttrs;
     use crate::ctx::WdfCtxNoneDesc;
-    use crate::op::_concepts::NtResult;
-    use crate::op::marks::IsWdfType;
-    use crate::rt::wdk_sys::{
-        HANDLE, PCWDF_OBJECT_CONTEXT_TYPE_INFO, WDFOBJECT,
-    };
+    use crate::rt::wdk_sys::PCWDF_OBJECT_CONTEXT_TYPE_INFO;
+    use crate::{Handle, HandleMut};
+    use crate::vals::NtResult;
 
+    pub trait IsWdfType: Sized {
+        fn to_non_null(self) -> NonNull<Self> {
+            unsafe { NonNull::new_unchecked(ptr::from_ref(&self).cast_mut()) }
+        }
+    }
     pub trait ToNonNull<T>: AsRef<T> + Sized {
         #[inline]
         fn to_non_null(self) -> Option<NonNull<T>> {
@@ -48,7 +40,7 @@ mod _operators {
             Some(self.as_non_null()?.cast())
         }
     }
-    
+
     pub trait ToNonNullCVoid<H: Copy>: ToNonNull<H> {
         fn to_non_null_c_void(self) -> Option<NonNull<c_void>> {
             Some(self.to_non_null()?.cast())
@@ -148,8 +140,8 @@ mod _operators {
         /// ```
         #[inline]
         fn with_ptr_mut<F>(&mut self, f: F)
-        where
-            F: FnOnce(*mut T),
+                           where
+                               F: FnOnce(*mut T),
         {
             f(unsafe { self.as_ptr_mut() })
         }
@@ -211,8 +203,8 @@ mod _operators {
         /// Always ensure the buffer is in a valid state before this method is called to avoid undefined behavior.
         #[inline]
         fn with_buff<F>(&self, f: F)
-        where
-            F: FnOnce(&[u8]),
+                        where
+                            F: FnOnce(&[u8]),
         {
             f(self.as_buff())
         }
@@ -246,8 +238,7 @@ mod _operators {
         fn as_buff(&self) -> &[u8] {
             unsafe {
                 core::slice::from_raw_parts(
-                    ptr::from_ref(self.as_ref())
-                        .cast::<u8>(),
+                    ptr::from_ref(self.as_ref()).cast::<u8>(),
                     size_of::<T>(),
                 )
             }
@@ -283,8 +274,8 @@ mod _operators {
         /// without exposing direct access to it. The exact behavior of `as_buff_mut` depends
         /// on the implementation of the enclosing object.
         fn with_buff_mut<F>(&mut self, f: F)
-        where
-            F: FnOnce(&mut [u8]),
+                            where
+                                F: FnOnce(&mut [u8]),
         {
             f(self.as_buff_mut())
         }
@@ -293,8 +284,7 @@ mod _operators {
             unsafe {
                 // SAFETY: buff cannot be null in this trait
                 core::slice::from_raw_parts_mut(
-                    ptr::from_mut(self.as_mut())
-                        .cast::<u8>(),
+                    ptr::from_mut(self.as_mut()).cast::<u8>(),
                     size_of::<T>(),
                 )
             }
@@ -303,8 +293,8 @@ mod _operators {
 
     pub trait AsBuilder {
         type Descriptor<'a>
-        where
-            Self: 'a;
+            where
+                Self: 'a;
 
         /// Constructs and returns a descriptor based on the current state of the builder.
         ///
@@ -355,8 +345,8 @@ mod _operators {
 
     pub trait AsMappableBuff<T>: AsBuff<T> {
         type Descriptor<'a>
-        where
-            Self: 'a;
+            where
+                Self: 'a;
 
         /// Applies a provided function `f` to each element of the underlying buffer,
         /// transforming the elements and returning a `Vec<U>` with the results.
@@ -436,24 +426,20 @@ mod _operators {
     /// assert_eq!(unsafe { *raw_ptr }, *safe_ref);
     /// assert_eq!(*safe_ref, 42);
     /// ```
-    pub trait AsNonNullBuff<T: Copy>:
-        AsNonNull<T>
-    {
+    pub trait AsNonNullBuff<T: Copy>: AsNonNull<T> {
         #[inline]
         fn as_non_null_buff(&self) -> Option<NonNull<u8>> {
             Some(self.as_non_null()?.cast())
         }
     }
-    
+
     pub trait AsRawBuff<T>: AsRef<T> {
         fn as_raw_buff(&self) -> *const u8 {
             ptr::from_ref(self.as_ref()).cast()
         }
     }
 
-    pub unsafe trait AsCtxDescriptor:
-        Sized + Default + 'static
-    {
+    pub unsafe trait AsCtxDescriptor: Sized + Default + 'static {
         /// A function that returns an optional `PCWDF_OBJECT_CONTEXT_TYPE_INFO`.
         ///
         /// This function is currently implemented to always return `None`.
@@ -469,7 +455,7 @@ mod _operators {
         /// assert!(result.is_none());
         /// ```
         fn descriptor()
-        -> Option<PCWDF_OBJECT_CONTEXT_TYPE_INFO> {
+            -> Option<PCWDF_OBJECT_CONTEXT_TYPE_INFO> {
             None
         }
 
@@ -589,9 +575,7 @@ mod _operators {
     /// - [`__Handle`]
     /// - [`WdfObjAttrs`]
     /// - [`AsWdfOwned`]
-    pub trait FromKernel<O: Copy>:
-        AsNonNull<O> + AsNonNullCVoid<O>
-    {
+    pub trait FromKernel<O: Copy>: AsNonNull<O> + AsNonNullCVoid<O> {
         type Accessor: IsWdfType;
         type Conf;
 
@@ -614,14 +598,11 @@ mod _operators {
             accessor: Handle<Self::Accessor>,
             conf: Option<Self::Conf>,
             attrs: Option<WdfObjAttrs<D>>,
-        ) -> NtResult<Self>
-        where
-            D: AsCtxDescriptor;
+        ) -> NtResult<Self> where
+                D: AsCtxDescriptor;
     }
 
-    pub trait FromKernelWithConf<O: Copy>:
-        FromKernel<O>
-    {
+    pub trait FromKernelWithConf<O: Copy>: FromKernel<O> {
         /// Helpers to call [`AsWdfOwner::allocate_from_owned`] when no args are needed by the implementing type
         /// ### See Also
         /// - [`AsWdfOwner::allocate_from_owned`]
@@ -637,9 +618,7 @@ mod _operators {
         }
     }
 
-    pub trait FromKernelWithConfAndAttrs<O: Copy>:
-        FromKernel<O>
-    {
+    pub trait FromKernelWithConfAndAttrs<O: Copy>: FromKernel<O> {
         fn from_kernel(
             owned: Handle<Self::Accessor>,
             conf: Self::Conf,
@@ -653,9 +632,7 @@ mod _operators {
         }
     }
 
-    pub trait FromKernelWithAttrs<O: Copy>:
-        FromKernel<O>
-    {
+    pub trait FromKernelWithAttrs<O: Copy>: FromKernel<O> {
         fn from_kernel(
             owned: Handle<Self::Accessor>,
             attrs: WdfObjAttrs,
@@ -907,10 +884,7 @@ mod _operators {
     ///
     /// # See Also
     /// - `AsCtxDescriptor`: The parent trait that must be implemented alongside this trait.
-    pub trait AsNoneCtxDesc<O = ()>:
-        AsCtxDescriptor
-    {
-    }
+    pub trait AsNoneCtxDesc<O = ()>: AsCtxDescriptor {}
 
     /// Describe a generic data type that is able to expose an handle
     /// to a static instance of `WDF_OBJECT_CONTEXT_TYPE_INFO`
@@ -957,20 +931,13 @@ mod _operators {
         ) -> PCWDF_OBJECT_CONTEXT_TYPE_INFO;
     }
 
-    pub trait AsNtStatus: Sized {
-        fn fmt_status(self) -> &'static str;
+    pub trait AsNtStatus: Sized {}
 
-        fn fmt_hex(self) -> String;
-    }
-
-    pub trait IntoRaw<O: Copy>:
-        Deref<Target = O> + Sized
-    {
+    pub trait IntoRaw<O: Copy>: Deref<Target=O> + Sized {
         fn into_raw(self) -> O {
             *self.deref()
         }
     }
 }
 
-pub use _concepts::NtResult;
 pub use _operators::*;
