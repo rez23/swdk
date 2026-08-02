@@ -80,15 +80,22 @@ mod private {
     /// - [API reference documentation for Windows Driver Kit](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/)
     #[derive(Clone, Debug)]
     pub struct Handle<'a, H: IsWdfType>(&'a H);
-    #[derive(Clone, Debug)]
-    pub struct HandleMut<'a, H: IsWdfType>(&'a H);
+    #[derive(Debug)]
+    pub struct HandleMut<'a, H: IsWdfType>(&'a mut H);
 
+    impl<'a, H: IsWdfType> From<HandleMut<'a, H>> for Handle<'a, H> {
+        fn from(value: HandleMut<'a, H>) -> Self {
+            Self {
+                0: value.0,
+            }
+        }
+    }
     impl<T: IsWdfType + ?Sized> IsWdfType for &T {}
     impl<T: IsWdfType + ?Sized> IsWdfType for &mut T {}
 
     mod impls {
         use core::borrow::Borrow;
-        use core::ops::Deref;
+        use core::ops::{Deref, DerefMut};
         use core::ptr;
         use core::ptr::NonNull;
 
@@ -152,6 +159,19 @@ mod private {
                 self.0
             }
         }
+        impl<'a, H: IsWdfType> Deref for HandleMut<'a, H> {
+            type Target = H;
+            fn deref(&self) -> &Self::Target {
+                self.0
+            }
+        }
+
+        impl<'a, T: IsWdfType> DerefMut for HandleMut<'a, T> {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                self.0
+            }
+        }
+
         impl<'a, H: IsWdfType> AsRef<H> for Handle<'a, H> {
             fn as_ref(&self) -> &H {
                 self.0
@@ -1104,4 +1124,4 @@ mod private {
 }
 
 #[allow(unused)]
-pub use private::Handle;
+pub use private::{Handle, HandleMut};
