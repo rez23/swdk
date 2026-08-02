@@ -3,8 +3,9 @@ mod _values {
 
     use num_enum::{IntoPrimitive, TryFromPrimitive};
 
+    use crate::NtStatus;
     use crate::ioctl::commands::IoCtlCommand;
-    use crate::op::marks::IsWdfType;
+    use crate::op::IsWdfType;
     use crate::rt::wdk_sys::{
         NTSTATUS, WDF_IO_TARGET_STATE,
     };
@@ -86,7 +87,7 @@ mod _values {
     #[derive(Debug)]
     pub struct IoCtlTargetSendInfo {
         pub command: IoCtlCommand,
-        pub ntstatus: NTSTATUS,
+        pub ntstatus: NtStatus,
         pub byte_returned: usize,
     }
 
@@ -321,6 +322,8 @@ mod _values {
         ImpersonateClient = 65536,
         ImpersonationIgnoreFailure = 131072,
     }
+
+    pub type NtResult<T = ()> = Result<T, NtStatus>;
 }
 
 pub use _values::*;

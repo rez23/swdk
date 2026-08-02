@@ -69,6 +69,7 @@ mod __public_api {
     pub use crate::wdf::operators as op;
     /// Contains various WDF convertible vals
     pub use crate::wdf::values as vals;
+    pub use crate::runtime::utils::NtStatus;
 }
 
 pub use __public_api::*;
