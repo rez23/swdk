@@ -228,7 +228,7 @@ pub struct WdfObjAttrs<D: AsCtxDescriptor = WdfCtxNoneDesc>
     pub on_destroy: PFN_WDF_OBJECT_CONTEXT_DESTROY,
     pub sync_scope: WdfSyncScope,
     pub execution_level: WdfExecutionLevel,
-    pub parent_obj: Option<Handle<WDFOBJECT>>,
+    pub parent_obj: Option<NonNull<c_void>>,
     _descriptor: PhantomData<D>,
 }
 impl<D: AsCtxDescriptor> AsBuilder for WdfObjAttrs<D> {
@@ -240,8 +240,7 @@ impl<D: AsCtxDescriptor> AsBuilder for WdfObjAttrs<D> {
     fn build(&self) -> Self::Descriptor<'_> {
         let parent = self
             .parent_obj
-            .as_ref()
-            .map_or(ptr::null_mut(), |ptr| ptr.raw());
+            .map_or(ptr::null_mut(), |ptr| ptr.as_ptr());
 
         let unique: PCWDF_OBJECT_CONTEXT_TYPE_INFO =
             D::descriptor().unwrap_or(ptr::null_mut());
