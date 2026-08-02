@@ -1,13 +1,24 @@
 mod _values {
+    use core::ffi::c_int;
+
+    use num_enum::{IntoPrimitive, TryFromPrimitive};
+
     use crate::ioctl::commands::IoCtlCommand;
+    use crate::op::marks::IsWdfType;
     use crate::rt::wdk_sys::{
         NTSTATUS, WDF_IO_TARGET_STATE,
     };
-    use alloc::vec::Vec;
-    use core::ffi::c_int;
-    use num_enum::{IntoPrimitive, TryFromPrimitive};
+
     #[repr(i32)]
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
     pub enum WdfIoQueueDispatchType {
         Invalid = 0,
         Sequential = 1,
@@ -16,7 +27,15 @@ mod _values {
         Max = 4,
     }
     #[repr(i32)]
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
     pub enum WdfIoQueueState {
         AcceptRequests = 1,
         DispatchRequests = 2,
@@ -25,7 +44,15 @@ mod _values {
         PnpHeld = 16,
     }
     #[repr(i32)]
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
     pub enum WdfTriState {
         False = 0,
         True = 1,
@@ -33,7 +60,15 @@ mod _values {
     }
 
     #[repr(i32)]
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
     pub enum WdfFileObjClass {
         Invalid = 0,
         NotRequired = 1,
@@ -52,12 +87,19 @@ mod _values {
     pub struct IoCtlTargetSendInfo {
         pub command: IoCtlCommand,
         pub ntstatus: NTSTATUS,
-        pub request: Vec<u8>,
         pub byte_returned: usize,
     }
-    
+
     #[repr(i32)]
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
     pub enum WdfSyncScope {
         Invalid = 0,
         Inherit = 1,
@@ -66,7 +108,15 @@ mod _values {
         None = 4,
     }
     #[repr(i32)]
-    #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive, TryFromPrimitive)]
+    #[derive(
+        Debug,
+        Copy,
+        Clone,
+        Eq,
+        PartialEq,
+        IntoPrimitive,
+        TryFromPrimitive,
+    )]
     pub enum WdfExecutionLevel {
         Invalid = 0,
         Inherit = 1,
@@ -89,6 +139,7 @@ mod _values {
         DeviceHasNoIoTarget,
         IllegalState(WdfIoTargetState),
         IoCtlTargetSendError(IoCtlTargetSendInfo),
+        InvalidIoDescriptor,
     }
 
     #[derive(Debug)]
@@ -98,21 +149,23 @@ mod _values {
         ByName,
         Reopen,
         LocalTargetByFile,
-        Unknown(c_int)
+        Unknown(c_int),
     }
 
-
     mod _impls {
-        use crate::rt::wdk_sys::{WDF_IO_TARGET_STATE, _WDF_IO_TARGET_OPEN_TYPE};
+        use core::ffi::c_int;
+
         use crate::rt::wdk_sys::_WDF_IO_TARGET_STATE::{
             WdfIoTargetClosed,
             WdfIoTargetClosedForQueryRemove,
             WdfIoTargetDeleted, WdfIoTargetPurged,
             WdfIoTargetStarted, WdfIoTargetStopped,
         };
+        use crate::rt::wdk_sys::{
+            _WDF_IO_TARGET_OPEN_TYPE, WDF_IO_TARGET_STATE,
+        };
         use crate::vals::_values::WdfIoTargetState;
         use crate::vals::WdfIoTargetOpenType;
-        use core::ffi::c_int;
 
         impl From<WdfIoTargetState> for WDF_IO_TARGET_STATE {
             fn from(
@@ -173,6 +226,9 @@ mod _values {
             }
         }
     }
+
+    pub type WdfTypeAccessorNotNeeded = ();
+    impl IsWdfType for WdfTypeAccessorNotNeeded {}
 }
 
 pub use _values::*;
