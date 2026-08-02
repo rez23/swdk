@@ -1,14 +1,20 @@
 mod private {
-    #[cfg(feature = "test-runtime")]
-    use crate::rt::test_rt::*;
-
-    use crate::op::NtResult;
     use wdk_sys::ntddk::KeQuerySystemTimePrecise;
     use wdk_sys::{LARGE_INTEGER, NTSTATUS};
 
+    #[cfg(feature = "test-runtime")]
+    use crate::rt::test_rt::*;
+    use crate::vals::NtResult;
+
     #[inline]
-    pub fn ntstatus_to_result(status: NTSTATUS) -> NtResult {
-        if status >= 0 { Ok(()) } else { Err(status) }
+    pub fn ntstatus_to_result(
+        status: NTSTATUS,
+    ) -> NtResult {
+        if status >= 0 {
+            Ok(())
+        } else {
+            Err(status.into())
+        }
     }
 
     #[allow(dead_code)]
@@ -21,7 +27,10 @@ mod private {
 
     #[allow(dead_code)]
     pub fn file_name(full_path: &str) -> &str {
-        full_path.rsplit(['/', '\\']).next().unwrap_or("??.rs")
+        full_path
+            .rsplit(['/', '\\'])
+            .next()
+            .unwrap_or("??.rs")
     }
 
     pub fn timestamp() -> i64 {
@@ -33,7 +42,8 @@ mod private {
 
         unsafe { ts.QuadPart }
     }
-    const WINDOWS_TO_UNIX_EPOCH_100NS: i64 = 116_444_736_000_000_000;
+    const WINDOWS_TO_UNIX_EPOCH_100NS: i64 =
+        116_444_736_000_000_000;
     const HUNDRED_NS_PER_SEC: i64 = 10_000_000;
     const HUNDRED_NS_PER_MILLI: i64 = 10_000;
     const SECS_PER_DAY: i64 = 86_400;
@@ -50,7 +60,10 @@ mod private {
     }
 
     impl core::fmt::Display for UtcDateTime {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        fn fmt(
+            &self,
+            f: &mut core::fmt::Formatter<'_>,
+        ) -> core::fmt::Result {
             write!(
                 f,
                 "{:04}-{:02}-{:02} {:02}:{:02}:{:02}.{:03} UTC",
@@ -66,19 +79,29 @@ mod private {
     }
 
     #[inline]
-    pub fn filetime_100ns_to_unix_parts(ts100ns: i64) -> (i64, u16) {
-        let unix_100ns = ts100ns - WINDOWS_TO_UNIX_EPOCH_100NS;
+    pub fn filetime_100ns_to_unix_parts(
+        ts100ns: i64,
+    ) -> (i64, u16) {
+        let unix_100ns =
+            ts100ns - WINDOWS_TO_UNIX_EPOCH_100NS;
         let secs = unix_100ns / HUNDRED_NS_PER_SEC;
-        let millis = ((unix_100ns % HUNDRED_NS_PER_SEC) / HUNDRED_NS_PER_MILLI) as u16;
+        let millis = ((unix_100ns % HUNDRED_NS_PER_SEC) /
+            HUNDRED_NS_PER_MILLI)
+            as u16;
         (secs, millis)
     }
 
     #[inline]
-    fn civil_from_days(days_since_unix_epoch: i64) -> (i32, u8, u8) {
+    fn civil_from_days(
+        days_since_unix_epoch: i64,
+    ) -> (i32, u8, u8) {
         let z = days_since_unix_epoch + 719_468;
-        let era = if z >= 0 { z } else { z - 146_096 } / 146_097;
+        let era =
+            if z >= 0 { z } else { z - 146_096 } / 146_097;
         let doe = z - era * 146_097;
-        let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+        let yoe = (doe - doe / 1460 + doe / 36_524 -
+            doe / 146_096) /
+            365;
         let y = yoe + era * 400;
         let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
         let mp = (5 * doy + 2) / 153;
@@ -90,7 +113,10 @@ mod private {
     }
 
     #[inline]
-    pub fn unix_secs_to_utc(secs: i64, millis: u16) -> UtcDateTime {
+    pub fn unix_secs_to_utc(
+        secs: i64,
+        millis: u16,
+    ) -> UtcDateTime {
         let days = secs.div_euclid(SECS_PER_DAY);
         let sod = secs.rem_euclid(SECS_PER_DAY);
 
@@ -112,14 +138,15 @@ mod private {
 
     #[inline]
     pub fn timestamp_utc() -> UtcDateTime {
-        let (secs, millis) = filetime_100ns_to_unix_parts(timestamp());
+        let (secs, millis) =
+            filetime_100ns_to_unix_parts(timestamp());
         unix_secs_to_utc(secs, millis)
     }
 }
 
 #[macro_export]
 macro_rules! logger_name {
-    () => {{env!("CARGO_PKG_NAME")}};
+    () => {{ env!("CARGO_PKG_NAME") }};
 }
 
 #[macro_export]
@@ -184,10 +211,15 @@ macro_rules! warn {
 
 #[macro_export]
 macro_rules! xmi_windbg_msg_with_status {
-    ($level_macro:ident, $status:expr, $message:literal) => {{
+    (
+        $level_macro:ident, $status:expr, $message:literal
+    ) => {{
         let status = $status;
 
-        $crate::$level_macro!("{} (STATUS=(%!STATUS)", $message,)
+        $crate::$level_macro!(
+            "{} (STATUS=(%!STATUS)",
+            $message,
+        )
     }};
 }
 
