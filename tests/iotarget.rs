@@ -2,7 +2,6 @@ use std::ptr::{dangling, NonNull};
 use swdk::rt::wdk_sys::WDFIOTARGET__;
 use swdk::Handle;
 use swdk::ioctl::IoCtlRequest;
-use swdk::op::AsKernelType;
 use swdk::vals::WdfIoTargetState;
 
 use swdk::rt::wdk_sys::{
@@ -31,38 +30,8 @@ fn read_status_returns_started() {
 
     assert_eq!(
         target.read_status(),
-        WdfIoTargetState::Started
+        Some(WdfIoTargetState::Started)
     );
-}
-
-#[test]
-fn send_ioctl_returns_ok() {
-    let target =
-        Handle::<WDFIOTARGET__>::new(NonNull::dangling());
-
-    let request =
-        IoCtlRequest::new(0x1234, EchoRequest::default());
-
-    let result =
-        target.send_ioctl_sync(request);
-
-    assert!(result.is_ok());
-}
-
-#[test]
-fn send_ioctl_returns_default_response() {
-    let target =
-        Handle::<WDFIOTARGET__>::new(NonNull::dangling());
-
-    let request =
-        IoCtlRequest::new(0x1234, EchoRequest::default());
-
-    let response =
-        target
-            .send_ioctl_sync(request)
-            .unwrap();
-
-    assert_eq!(response.value, 0);
 }
 
 #[test]

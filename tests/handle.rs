@@ -1,8 +1,7 @@
 use std::ptr;
 use std::ptr::NonNull;
 use swdk::Handle;
-use swdk::op::{AsRaw, AsRawWithBorrow, AsWdfHandle};
-use swdk::rt::wdk_sys::WDFDEVICE;
+use swdk::op::AsRaw;
 
 #[test]
 fn can_create_handle() {

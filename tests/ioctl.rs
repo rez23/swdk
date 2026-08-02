@@ -1,6 +1,6 @@
 use swdk::ioctl::{
     IoCtlRequest,
-    IoCtlResponse,
+    IoBuffer,
 };
 use swdk::op::{AsBuilder, AsBuilderMut};
 
@@ -22,7 +22,7 @@ fn request_without_payload_builds_none() {
 #[test]
 fn response_default_allocates_default_value() {
     let response =
-        IoCtlResponse::<u32>::default();
+        IoBuffer::<u32>::default();
 
     assert_eq!(*response, 0);
 }
@@ -30,7 +30,7 @@ fn response_default_allocates_default_value() {
 #[test]
 fn response_into_inner_returns_inner() {
     let response =
-        IoCtlResponse::<u32>::new(77);
+        IoBuffer::<u32>::new(77);
 
     assert_eq!(response.into_inner(), 77);
 }
@@ -49,7 +49,7 @@ fn request_build_keeps_payload_alive() {
 
 #[test]
 fn response_build_does_not_modify_value() {
-    let response = IoCtlResponse::new(77u32);
+    let response = IoBuffer::new(77u32);
 
     let _ = response.build();
 
@@ -58,7 +58,7 @@ fn response_build_does_not_modify_value() {
 
 #[test]
 fn response_build_mut_does_not_modify_value() {
-    let mut response = IoCtlResponse::new(77u32);
+    let mut response = IoBuffer::new(77u32);
 
     let _ = response.build_mut();
 
@@ -68,7 +68,7 @@ fn response_build_mut_does_not_modify_value() {
 #[test]
 fn response_build_and_build_mut_report_same_size() {
     let mut response =
-        IoCtlResponse::<u32>::default();
+        IoBuffer::<u32>::default();
 
     let read_desc = response.build();
     let write_desc = response.build_mut();
@@ -94,7 +94,7 @@ fn request_with_payload_builds_non_empty_descriptor() {
 #[test]
 fn response_build_produces_non_empty_descriptor() {
     let response =
-        IoCtlResponse::<u32>::default();
+        IoBuffer::<u32>::default();
 
     let desc = response.build();
 
@@ -114,7 +114,7 @@ fn request_with_payload_builds_non_null_buffer() {
 
 #[test]
 fn response_build_produces_non_null_buffer() {
-    let response = IoCtlResponse::<u32>::default();
+    let response = IoBuffer::<u32>::default();
     let desc = response.build();
 
     assert!(!unsafe { desc.u.BufferType.Buffer }.is_null());
@@ -122,7 +122,7 @@ fn response_build_produces_non_null_buffer() {
 
 #[test]
 fn response_build_mut_produces_non_null_buffer() {
-    let mut response = IoCtlResponse::<u32>::default();
+    let mut response = IoBuffer::<u32>::default();
     let desc = response.build_mut();
 
     assert!(!unsafe { desc.u.BufferType.Buffer }.is_null());
