@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 #[cfg(feature = "kmdf-runtime")]
 use std::{fs, io, path::Path};
-
+use std::fmt::format;
 #[cfg(feature = "kmdf-runtime")]
 use regex::Regex;
 
@@ -22,7 +22,7 @@ pub fn generate_is_wdf_type_impls(
         types.iter().cloned().collect::<BTreeSet<_>>()
     {
         generated.push_str(&format!(
-            "impl crate::op::marks::IsWdfType for wdk_sys::{name} {{}}\n"
+            "impl crate::op::IsWdfType for wdk_sys::{name} {{}}\n"
         ));
     }
 
@@ -62,46 +62,106 @@ fn collect_ntstatus_values_from_wdf_header(
     Ok(entries)
 }
 
+fn generate_single_match_branch(left: &str, right: &str) -> String {
+    format!("    {left} => {right},\n")
+}
+
 #[cfg(feature = "kmdf-runtime")]
 fn generate_nt_status_as_ntstatus_impl(
     statuses: &[NtStatusEntry],
 ) -> String {
-    let mut out = String::new();
+    let nt_status_enum_decl_open = String::from("\n\
+    #[derive(\n\
+        Debug,\n\
+        Copy,\n\
+        Clone,\n\
+        Eq,\n\
+        PartialEq,\n\
+    )]\n\
+    pub enum NtStatus {\n");
+    let mut enum_nt_vals = String::new();
+    let nts_status_enum_decl_close = String::from("\
+       StatusNotWdfError(wdk_sys::NTSTATUS),\n\
+    }\n\
+    ");
 
-    out.push_str(
-        "
-         use crate::alloc::format;\n\
-         use crate::alloc::string::String;\n\
-         impl crate::op::AsNtStatus for wdk_sys::NTSTATUS {\n\
-             fn fmt_status(self) -> &'static str {\n\
-                 match self {\n",
-    );
+    let from_nt_status_for_nt_open = String::from("\n\
+    impl From<NtStatus> for wdk_sys::NTSTATUS {\n\
+        fn from(status: NtStatus) -> Self {\n\
+            match status {\n\
+                NtStatus::StatusNotWdfError(status) => status,\n\
+    ");
+    let mut from_nt_status_for_nt = String::new();
+    let from_nt_status_for_nt_close = String::from("\n\
+            }\n\
+        }\n\
+    }\n\
+    ");
+
+    let from_nt_to_nt_status_open = String::from("\n\
+    impl From<wdk_sys::NTSTATUS> for NtStatus {\n\
+        fn from(status: wdk_sys::NTSTATUS) -> Self {\n\
+            match status {\n\
+                _ => NtStatus::StatusNotWdfError(status),\n\
+    ");
+    let mut from_nt_to_nt_status = String::new();
+
+    let format_functions_impls = String::from("\
+    impl crate::op::AsNtStatus for NtStatus { }\n\
+    impl PartialEq<NtStatus> for wdk_sys::NTSTATUS {\n\
+        fn eq(&self, other: &NtStatus) -> bool {\n\
+            *self == wdk_sys::NTSTATUS::from(*other)
+        }\n\
+    }\n\
+    impl PartialEq<wdk_sys::NTSTATUS> for NtStatus {\n\
+        fn eq(&self, other: &wdk_sys::NTSTATUS) -> bool {\n\
+            wdk_sys::NTSTATUS::from(*self) == *other\n\
+        }\n\
+    }\n\
+    impl PartialOrd<wdk_sys::NTSTATUS> for NtStatus {\n\
+        fn partial_cmp(\n\
+            &self,\n\
+            other: &wdk_sys::NTSTATUS,\n\
+        ) -> Option<core::cmp::Ordering> {\n\
+            let lhs = wdk_sys::NTSTATUS::from(*self);\n\
+            lhs.partial_cmp(other)\n\
+        }\n\
+    }\n\
+    ");
 
     for status in statuses {
-        let raw = u32::from_str_radix(
-            status.value.trim_start_matches("0x"),
-            16,
-        )
-        .unwrap();
-
-        let signed = raw as i32;
-        out.push_str(&format!(
-            "                    {} => \"{}\",\n",
-            signed, status.macro_name,
+        // Enum
+        enum_nt_vals.push_str(&format!(
+            "    {}(core::option::Option<&'static str>),\n",
+            status.macro_name.to_pascal_case(),
         ));
-    }
 
-    out.push_str(
-        "                    _ => \"STATUS_UNKNOWN\",\n\
-                 }\n\
-             }\n\n\
-             fn fmt_hex(self) -> String {\n\
-                 format!(\"0x{:08X}\", self as u32)\n\
-             }\n\
-         }\n",
-    );
+        // Converters
+        from_nt_to_nt_status.push_str(generate_single_match_branch(
+            status.value.as_str(), format!("NtStatus::{}(core::option::Option::None)", status.macro_name.to_pascal_case()).as_str(),
+        ).as_str());
+        from_nt_status_for_nt.push_str(generate_single_match_branch(
+            format!("NtStatus::{}(_)", status.macro_name.to_pascal_case()).as_str(), status.value.to_string().as_str(),
+        ).as_str());
+    };
 
-    out
+    format!("\
+        /// NT status errors generated from ntstatus.h\n\
+        {nt_status_enum_decl_open}\
+        {enum_nt_vals}\
+        {nts_status_enum_decl_close}\
+        \n\
+        {from_nt_status_for_nt_open}\
+        {from_nt_status_for_nt}\
+        {from_nt_status_for_nt_close}\
+        \n\
+        {from_nt_to_nt_status_open}\
+        {from_nt_to_nt_status}\
+        {from_nt_status_for_nt_close}\
+        \n\
+        {format_functions_impls}\n\
+        \n\
+    ")
 }
 
 #[cfg(feature = "kmdf-runtime")]
@@ -124,6 +184,7 @@ pub struct WdfTypeCollector {
 }
 
 use bindgen::callbacks::ItemInfo;
+use heck::ToPascalCase;
 
 impl ParseCallbacks for WdfTypeCollector {
     fn item_name(
@@ -234,10 +295,10 @@ fn main() -> Result<(), wdk_build::ConfigError> {
                         .collect::<Vec<_>>(),
                 );
 
-            let generated = format!(
-                "{}\n{}\n",
-                ntstatus_bindings, wdf_types_bindings
-            );
+            let generated = format!("\
+            {ntstatus_bindings}\n\
+            {wdf_types_bindings}\n\
+            ");
 
             write_generated_file(&generated)
                 .map_err(|_| {
