@@ -45,4 +45,7 @@ mod __ntstatus {
     include!(concat!(env!("OUT_DIR"), "/wdkgen.rs"));
 }
 
+#[cfg(feature = "kmdf-runtime")]
+pub use __ntstatus::*;
+
 pub use private::*;
