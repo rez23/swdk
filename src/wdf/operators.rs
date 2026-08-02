@@ -16,7 +16,7 @@ mod _operators {
     use core::ptr;
     use core::ptr::NonNull;
 
-    use crate::{Handle};
+    use crate::{Handle, HandleMut};
     use crate::bd::WdfObjAttrs;
     use crate::ctx::WdfCtxNoneDesc;
     use crate::op::_concepts::NtResult;
@@ -599,6 +599,13 @@ mod _operators {
             &self,
         ) -> Option<Handle<'static, C>> {
             Some(Handle::<'static, C>::new(C::from_kernel(
+                self.as_non_null_c_void()?,
+            )?))
+        }
+        fn ctx_mut<C: AsCtxDescriptor + IsWdfType>(
+            &self,
+        ) -> Option<HandleMut<'static, C>> {
+            Some(HandleMut::<'static, C>::new(C::from_kernel(
                 self.as_non_null_c_void()?,
             )?))
         }
