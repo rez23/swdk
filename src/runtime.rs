@@ -1,4 +1,6 @@
 mod __runtime {
+    use wdk_sys::NTSTATUS;
+
     #[cfg(feature = "test-runtime")]
     #[allow(
         non_camel_case_types,
@@ -797,6 +799,7 @@ mod __runtime {
             }
         }
     }
+    
     #[cfg(feature = "kmdf-runtime")]
     #[expect(
         clippy::missing_safety_doc,
@@ -806,27 +809,12 @@ mod __runtime {
     pub mod kmdf {
         use core::ffi::c_void;
 
-        use wdk_sys::{
-            BOOLEAN, NTSTATUS, PCUNICODE_STRING,
-            PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT,
-            PULONG_PTR, PWDF_FILEOBJECT_CONFIG,
-            PWDF_IO_QUEUE_CONFIG,
-            PWDF_IO_TARGET_OPEN_PARAMS,
-            PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES,
-            PWDF_PNPPOWER_EVENT_CALLBACKS,
-            PWDF_REQUEST_SEND_OPTIONS, PWDFDEVICE_INIT,
-            WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE,
-            WDF_OBJECT_ATTRIBUTES,
-            WDF_REQUEST_SEND_OPTIONS, WDFDEVICE,
-            WDFDEVICE_INIT, WDFDRIVER, WDFIOTARGET,
-            WDFOBJECT, WDFQUEUE, WDFREQUEST,
-            call_unsafe_wdf_function_binding,
-        };
+        use wdk_sys::{BOOLEAN, NTSTATUS, PCUNICODE_STRING, PCWDF_OBJECT_CONTEXT_TYPE_INFO, PDRIVER_OBJECT, PULONG_PTR, PWDF_FILEOBJECT_CONFIG, PWDF_IO_QUEUE_CONFIG, PWDF_IO_TARGET_OPEN_PARAMS, PWDF_MEMORY_DESCRIPTOR, PWDF_OBJECT_ATTRIBUTES, PWDF_PNPPOWER_EVENT_CALLBACKS, PWDF_REQUEST_SEND_OPTIONS, PWDFDEVICE_INIT, WDF_DRIVER_CONFIG, WDF_IO_TARGET_STATE, WDF_OBJECT_ATTRIBUTES, WDF_REQUEST_SEND_OPTIONS, WDFDEVICE, WDFDEVICE_INIT, WDFDRIVER, WDFIOTARGET, WDFOBJECT, WDFQUEUE, WDFREQUEST, call_unsafe_wdf_function_binding, WDFREQUEST__, ULONG_PTR};
 
         use crate::bd::WdfFileObjectConfig;
         use crate::call_ntstatus_wdf_unsafe_binding;
         use crate::ioctl::commands::IoCtlCommand;
-        use crate::op::NtResult;
+        use crate::vals::NtResult;
 
         #[inline]
         pub unsafe fn wdf_driver_create(
@@ -1064,6 +1052,22 @@ mod __runtime {
                 p_init,
                 p_config,
                 attrs
+            )
+        }
+
+        #[inline]
+        pub unsafe fn wdf_request_get_input_buffer(
+            request: WDFREQUEST,
+            size: usize,
+            in_buff: PWDF_MEMORY_DESCRIPTOR,
+            read_len: *mut usize
+        ) -> NtResult {
+            call_ntstatus_wdf_unsafe_binding!(
+                WdfRequestRetrieveInputBuffer,
+                request,
+                size,
+                in_buff.cast(),
+                read_len
             )
         }
     }
