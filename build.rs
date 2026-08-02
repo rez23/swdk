@@ -18,9 +18,7 @@ pub fn generate_is_wdf_type_impls(
 
     let mut generated = String::new();
 
-    for name in
-        types.iter().cloned().collect::<BTreeSet<_>>()
-    {
+    for name in types.iter().cloned().collect::<BTreeSet<_>>() {
         generated.push_str(&format!(
             "impl crate::op::IsWdfType for wdk_sys::{name} {{}}\n"
         ));
@@ -37,8 +35,7 @@ fn collect_ntstatus_values_from_wdf_header(
 
     let regex = Regex::new(
         r#"^#define\s+(STATUS_[A-Z0-9_]+)\s+\(\(NTSTATUS\)(0x[0-9A-F]+)L\)"#
-    )
-        .unwrap();
+    ).unwrap();
 
     let mut entries = Vec::new();
 
@@ -79,9 +76,8 @@ fn generate_nt_status_as_ntstatus_impl(
         PartialEq,\n\
     )]\n\
     pub enum NtStatus {\n");
-    let mut enum_nt_vals = String::new();
     let nts_status_enum_decl_close = String::from("\
-       StatusNotWdfError(wdk_sys::NTSTATUS),\n\
+       StatusNotWdfError((wdk_sys::NTSTATUS, core::option::Option<&'static str>)),\n\
     }\n\
     ");
 
@@ -89,10 +85,10 @@ fn generate_nt_status_as_ntstatus_impl(
     impl From<NtStatus> for wdk_sys::NTSTATUS {\n\
         fn from(status: NtStatus) -> Self {\n\
             match status {\n\
-                NtStatus::StatusNotWdfError(status) => status,\n\
+                NtStatus::StatusNotWdfError((status, _)) => status,\n\
     ");
-    let mut from_nt_status_for_nt = String::new();
-    let from_nt_status_for_nt_close = String::from("\n\
+
+    let match_fn_declaration_with_impl_close = String::from("\n\
             }\n\
         }\n\
     }\n\
@@ -102,9 +98,8 @@ fn generate_nt_status_as_ntstatus_impl(
     impl From<wdk_sys::NTSTATUS> for NtStatus {\n\
         fn from(status: wdk_sys::NTSTATUS) -> Self {\n\
             match status {\n\
-                _ => NtStatus::StatusNotWdfError(status),\n\
+                _ => NtStatus::StatusNotWdfError((status, core::option::Option::None)),\n\
     ");
-    let mut from_nt_to_nt_status = String::new();
 
     let format_functions_impls = String::from("\
     impl crate::op::AsNtStatus for NtStatus { }\n\
@@ -129,21 +124,39 @@ fn generate_nt_status_as_ntstatus_impl(
     }\n\
     ");
 
-    for status in statuses {
-        // Enum
-        enum_nt_vals.push_str(&format!(
-            "    {}(core::option::Option<&'static str>),\n",
-            status.macro_name.to_pascal_case(),
-        ));
+    let with_info_fn_def_open = String::from("\
+        pub fn with_info(self, info: &'static str) -> Self {\n\
+            match self {\n\
+                  NtStatus::StatusNotWdfError((ntstatus, _)) => NtStatus::StatusNotWdfError((\
+                      ntstatus, core::option::Option::Some(info)\
+                  )),\n"
+    );
+    let match_fn_close = String::from("\
+        }\n\
+    }\n\
+    ");
 
-        // Converters
-        from_nt_to_nt_status.push_str(generate_single_match_branch(
-            status.value.as_str(), format!("NtStatus::{}(core::option::Option::None)", status.macro_name.to_pascal_case()).as_str(),
-        ).as_str());
-        from_nt_status_for_nt.push_str(generate_single_match_branch(
-            format!("NtStatus::{}(_)", status.macro_name.to_pascal_case()).as_str(), status.value.to_string().as_str(),
-        ).as_str());
-    };
+    let from_nt_with_info_fn_def = String::from("\
+        pub fn from_nt_with_info(ntstatus: wdk_sys::NTSTATUS, info: &'static str) -> Self {\n\
+            NtStatus::from(ntstatus).with_info(info)\n\
+        }\n\
+        ");
+
+
+    let ntstatus_impl_open = String::from("\
+        impl NtStatus {\n"
+    );
+    let enum_nt_vals = generate_enum_def(statuses);
+    let from_nt_to_nt_status = generate_matches(statuses, |value, name| {
+        (value, format!("NtStatus::{}(core::option::Option::None)", name.to_pascal_case()))
+    });
+    let from_nt_status_for_nt = generate_matches(statuses, |value, name| {
+        (format!("NtStatus::{}(_)", name.to_pascal_case()), value)
+    });
+    let with_info_match = generate_matches(statuses, |value, name| {
+        (format!("NtStatus::{}(_)", name.to_pascal_case()), format!("NtStatus::{}(core::option::Option::Some(info))", name.to_pascal_case()))
+    });
+    let ntstatus_impl_close = String::from("}\n");
 
     format!("\
         /// NT status errors generated from ntstatus.h\n\
@@ -153,17 +166,38 @@ fn generate_nt_status_as_ntstatus_impl(
         \n\
         {from_nt_status_for_nt_open}\
         {from_nt_status_for_nt}\
-        {from_nt_status_for_nt_close}\
+        {match_fn_declaration_with_impl_close}\
         \n\
         {from_nt_to_nt_status_open}\
         {from_nt_to_nt_status}\
-        {from_nt_status_for_nt_close}\
+        {match_fn_declaration_with_impl_close}\
         \n\
         {format_functions_impls}\n\
         \n\
+        {ntstatus_impl_open}\n\
+        {with_info_fn_def_open}\n\
+        {with_info_match}\n\
+        {match_fn_close}\n\
+        {from_nt_with_info_fn_def}\n\
+        {ntstatus_impl_close}\n\
     ")
 }
 
+fn generate_enum_def(statuses: &[NtStatusEntry]) -> String {
+    statuses.iter().map(|status| {
+        // Enum
+        format!(
+            "    {}(core::option::Option<&'static str>),\n",
+            status.macro_name.to_pascal_case(),
+        )
+    }).collect()
+}
+fn generate_matches(statuses: &[NtStatusEntry], op: impl Fn(String, String) -> (String, String)) -> String {
+    statuses.iter().map(|status| {
+        let (name, value) = op(status.value.clone(), status.macro_name.clone());
+        generate_single_match_branch(name.as_str(), value.as_str())
+    }).collect()
+}
 #[cfg(feature = "kmdf-runtime")]
 fn write_generated_file(
     generated: &str,
@@ -194,10 +228,7 @@ impl ParseCallbacks for WdfTypeCollector {
         let name = item_info.name;
 
         if name.starts_with("WDF") && name.ends_with("__") {
-            self.types
-                .lock()
-                .unwrap()
-                .insert(name.to_string());
+            self.types.lock().unwrap().insert(name.to_string());
         }
 
         None
@@ -208,31 +239,24 @@ impl ParseCallbacks for WdfTypeCollector {
 fn main() -> Result<(), wdk_build::ConfigError> {
     wdk_build::configure_wdk_library_build_and_then(
         |config| {
-            let ntstatus = config
-                .include_paths()?
-                .find_map(|path| {
-                    let candidate = path.join("ntstatus.h");
-                    candidate.exists().then_some(candidate)
-                })
-                .ok_or(
-                    wdk_build::ConfigError::WdkContentRootDetectionError,
-                )?;
+            let ntstatus = config.include_paths()?.find_map(|path| {
+                let candidate = path.join("ntstatus.h");
+                candidate.exists().then_some(candidate)
+            }).ok_or(
+                wdk_build::ConfigError::WdkContentRootDetectionError,
+            )?;
 
             let collector = WdfTypeCollector::default();
             let collected = collector.types.clone();
 
-            let header = config
-                .bindgen_header_contents([
-                    wdk_build::ApiSubset::Base,
-                    wdk_build::ApiSubset::Wdf,
-                ])
-                .map_err(|_| {
-                    wdk_build::ConfigError::WdkContentRootDetectionError
-                })?;
+            let header = config.bindgen_header_contents([
+                wdk_build::ApiSubset::Base,
+                wdk_build::ApiSubset::Wdf,
+            ]).map_err(|_| {
+                wdk_build::ConfigError::WdkContentRootDetectionError
+            })?;
 
-            let mut builder = bindgen::Builder::default()
-                .header_contents("wrapper.h", &header)
-                .parse_callbacks(Box::new(collector));
+            let mut builder = bindgen::Builder::default().header_contents("wrapper.h", &header).parse_callbacks(Box::new(collector));
 
             for path in config.include_paths()? {
                 builder = builder.clang_arg(format!(
@@ -245,29 +269,21 @@ fn main() -> Result<(), wdk_build::ConfigError> {
                 wdk_build::Config::wdk_bindgen_compiler_flags(),
             );
 
-            for (name, value) in
-                config.preprocessor_definitions()
-            {
+            for (name, value) in config.preprocessor_definitions() {
                 builder = match value {
-                    Some(v) => builder
-                        .clang_arg(format!("-D{name}={v}")),
-                    None => builder
-                        .clang_arg(format!("-D{name}")),
+                    Some(v) => builder.clang_arg(format!("-D{name}={v}")),
+                    None => builder.clang_arg(format!("-D{name}")),
                 };
             }
 
-            let _bindings = builder
-                .generate()
-                .map_err(|e| {
-                    println!("cargo:warning=bindgen error: {e}");
-                    wdk_build::ConfigError::WdkContentRootDetectionError
-                })?;
+            let _bindings = builder.generate().map_err(|e| {
+                println!("cargo:warning=bindgen error: {e}");
+                wdk_build::ConfigError::WdkContentRootDetectionError
+            })?;
 
-            let statuses =
-                collect_ntstatus_values_from_wdf_header(&ntstatus)
-                    .map_err(|_| {
-                        wdk_build::ConfigError::WdkContentRootDetectionError
-                    })?;
+            let statuses = collect_ntstatus_values_from_wdf_header(&ntstatus).map_err(|_| {
+                wdk_build::ConfigError::WdkContentRootDetectionError
+            })?;
 
             println!(
                 "cargo:warning=Collected {} NTSTATUS values from {}",
@@ -275,10 +291,9 @@ fn main() -> Result<(), wdk_build::ConfigError> {
                 ntstatus.display()
             );
 
-            let ntstatus_bindings =
-                generate_nt_status_as_ntstatus_impl(
-                    &statuses,
-                );
+            let ntstatus_bindings = generate_nt_status_as_ntstatus_impl(
+                &statuses,
+            );
 
             let wdf_types = collected.lock().unwrap();
 
@@ -287,23 +302,18 @@ fn main() -> Result<(), wdk_build::ConfigError> {
                 wdf_types.len()
             );
 
-            let wdf_types_bindings =
-                generate_is_wdf_type_impls(
-                    &wdf_types
-                        .iter()
-                        .cloned()
-                        .collect::<Vec<_>>(),
-                );
+            let wdf_types_bindings = generate_is_wdf_type_impls(
+                &wdf_types.iter().cloned().collect::<Vec<_>>(),
+            );
 
             let generated = format!("\
             {ntstatus_bindings}\n\
             {wdf_types_bindings}\n\
             ");
 
-            write_generated_file(&generated)
-                .map_err(|_| {
-                    wdk_build::ConfigError::WdkContentRootDetectionError
-                })?;
+            write_generated_file(&generated).map_err(|_| {
+                wdk_build::ConfigError::WdkContentRootDetectionError
+            })?;
             Ok(())
         },
     )
