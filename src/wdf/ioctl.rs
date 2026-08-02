@@ -62,7 +62,7 @@ mod private {
     /// This struct is typically used to encapsulate the response data returned from ioctl operations
     /// in a structured and type-safe manner. The wrapped type `T` must have a `Default` implementation
     /// to ensure it can be initialized with default values.
-    pub struct IoCtlResponse<T: Default>(T);
+    pub struct IoBuffer<T: Default>(T);
 
     /// A structure representing an I/O control (ioctl) request.
     ///
@@ -85,13 +85,13 @@ mod private {
     /// requests.
     pub struct IoCtlRequest<T>(IoCtlCommand, T);
 
-    mod _ioctl_resp_impls {
-        use crate::ioctl::private::{operations, IoCtlResponse};
-        use crate::op::{AsBuff, AsBuilder, AsBuilderMut};
+    mod buff_io_impls {
+        use crate::ioctl::private::{operations, IoBuffer};
+        use crate::op::{AsBuff, AsBuilder, AsBuilderMut, AsNonNull, AsNonNullBuff, AsRawBuff, ToNonNull};
         use core::ops::Deref;
         use crate::rt::wdk_sys::WDF_MEMORY_DESCRIPTOR;
 
-        impl<T: Default> IoCtlResponse<T> {
+        impl<T: Default> IoBuffer<T> {
             #[allow(dead_code)]
             pub fn new(data: T) -> Self {
                 Self(data)
@@ -102,13 +102,21 @@ mod private {
                 self.0
             }
         }
-        impl<T: Default> AsRef<T> for IoCtlResponse<T> {
+
+        impl<T: Default> ToNonNull<T> for IoBuffer<T> {}
+
+        impl<T: Default+Copy> AsNonNull<T> for IoBuffer<T> {}
+
+        impl<T: Default+Copy> AsNonNullBuff<T> for IoBuffer<T> {}
+
+        impl<T: Default> AsRef<T> for IoBuffer<T> {
             fn as_ref(&self) -> &T {
                 &self.0
             }
         }
-        impl<T: Default> AsBuff<T> for IoCtlResponse<T> {}
-        impl<T: Default> AsBuilder for IoCtlResponse<T> {
+
+        impl<T: Default> AsRawBuff<T> for IoBuffer<T> {}
+        impl<T: Default> AsBuilder for IoBuffer<T> {
             type Descriptor<'a>
                 = WDF_MEMORY_DESCRIPTOR
             where
@@ -119,34 +127,35 @@ mod private {
                 operations::build_for_data_type(self.as_ref())
             }
         }
-        impl<T: Default> Default for IoCtlResponse<T> {
+        impl<T: Default> Default for IoBuffer<T> {
             fn default() -> Self {
                 Self(T::default())
             }
         }
-        impl<T: Default> AsMut<T> for IoCtlResponse<T> {
+        impl<T: Default> AsMut<T> for IoBuffer<T> {
             fn as_mut(&mut self) -> &mut T {
                 &mut self.0
             }
         }
-        impl<T: Default> AsBuilderMut for IoCtlResponse<T> {
+        impl<T: Default> AsBuilderMut for IoBuffer<T> {
             #[inline]
             fn build_mut(&mut self) -> Self::Descriptor<'_> {
                 operations::build_for_data_type(self.as_mut())
             }
         }
-        impl<T: Default> Deref for IoCtlResponse<T> {
+        impl<T: Default> Deref for IoBuffer<T> {
             type Target = T;
 
             fn deref(&self) -> &Self::Target {
                 self.as_ref()
             }
         }
+
     }
     mod _ioctl_req_impls {
         use crate::ioctl::private::commands::IoCtlCommand;
         use crate::ioctl::private::{operations, IoCtlRequest};
-        use crate::op::{AsBuilder, AsOptionalBuff};
+        use crate::op::{AsBuilder};
         use crate::rt::wdk_sys::WDF_MEMORY_DESCRIPTOR;
 
         #[allow(dead_code)]
@@ -180,8 +189,7 @@ mod private {
                 self.as_ref().as_ref().map(operations::build_for_data_type)
             }
         }
-        impl<T> AsOptionalBuff<T> for IoCtlRequest<Option<T>> {}
     }
 }
 pub use private::commands;
-pub use private::{IoCtlRequest, IoCtlResponse};
+pub use private::{IoCtlRequest, IoBuffer};
