@@ -8,7 +8,7 @@
 //! The solution is something like NTSTATUS.fmt_status(), a build script generator that auto creates the builders from the C original struct,
 //! So less late or earlier I will implement something like that... but, for now, this is a little version needed for getting work the first examples
 
-use core::ffi::{c_int, c_void};
+use core::ffi::{c_int, c_ulonglong, c_void};
 use core::marker::PhantomData;
 use core::ptr;
 use core::ptr::NonNull;
@@ -60,11 +60,7 @@ use crate::ctx::WdfCtxNoneDesc;
 use crate::op::{AsBuilder, AsCtxDescriptor};
 #[cfg(feature = "test-runtime")]
 use crate::rt::wdk_sys;
-use crate::vals::{
-    WdfExecutionLevel, WdfFileObjClass,
-    WdfIoQueueDispatchType, WdfIoTargetOpenType,
-    WdfSyncScope, WdfTriState,
-};
+use crate::vals::{WdfExecutionLevel, WdfFileObjClass, WdfIoQueueDispatchType, WdfIoTargetOpenType, WdfRequestSendOptionsFlags, WdfSyncScope, WdfTriState};
 
 #[derive(Default)]
 pub struct WdfDriverSetup {
@@ -378,11 +374,20 @@ impl AsBuilder for WdfDevicePnpPowerSetup {
     }
 }
 
-#[derive(Default)]
 pub struct WdfRequestSendOption {
-    pub flags: core::ffi::c_int,
-    pub timeout: core::ffi::c_ulonglong,
+    pub flags: WdfRequestSendOptionsFlags,
+    pub timeout: c_ulonglong,
 }
+
+impl Default for WdfRequestSendOption {
+    fn default() -> Self {
+        Self {
+            flags: WdfRequestSendOptionsFlags::Synchronous,
+            timeout: 0,
+        }
+    }
+}
+
 impl AsBuilder for WdfRequestSendOption {
     type Descriptor<'a> = WDF_REQUEST_SEND_OPTIONS;
 
