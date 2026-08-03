@@ -22,7 +22,7 @@ This allows driver authors to express, at compile time, what WDF will do at runt
 - a descriptor configures how a framework object is created;
 - a request flows through a queue and can be inspected, completed or forwarded.
 
-Traits such as `AsWdfOwner`, `AsWdfOwned`, `AsCtxDescriptor` and `AsBuilder` are therefore not just helpers.
+Traits such as `AsKernelType`, `AsKernelType`, `AsCtxDescriptor` and `AsBuilder` are therefore not just helpers.
 
 They are the formal operators of SWDK’s meta-WDF language: they describe how WDF resources relate to each other and expose those relationships to the Rust compiler.
 
@@ -46,7 +46,7 @@ pub unsafe extern "system" fn driver_entry(
 ) -> NTSTATUS {
     if_nterror_return_ntstatus!(
         Handle::<WDFDRIVER>::from_owned_with_attrs(
-            driver_obj,
+            driver_obj.to_non_null(),
             WdfDriverConf {
                 setup: WdfDriverSetup {
                     on_device_add: Some(on_device_add),
@@ -66,8 +66,8 @@ unsafe extern "C" fn on_device_add(
     device_init: PWDFDEVICE_INIT,
 ) -> NTSTATUS {
     if_nterror_return_ntstatus!(
-        Handle::<WDFDEVICE>::from_owned(
-            Handle::new(&device_init).raw(),
+        Handle::<WDFDEVICE__>::from_kernel(
+            device_init.to_non_null(),
             Some(WdfObjAttrs::<WdfCtxNoneDesc>::default()),
         )
     );
@@ -85,7 +85,7 @@ Although minimal, this example creates both the KMDF driver object and a device 
 - automatic descriptor initialization
 - `NTSTATUS`-oriented error handling
 
-For a more complete overview of ***swdk*** capabilities, [gamepad-info](https://github.com/rez23/gamepad-info) is a simple driver that 
+For a more complete overview of ***swdk*** capabilities, [xmouseinput_sys](https://github.com/rez23/xmouseinput_sys) is a simple driver that 
 registers itself as a filter and asks the device its capability via IOCTL, you can test it via Hyper-V and compile via MSVC-Clang
 
 # Getting started
@@ -209,7 +209,7 @@ With swdk, the same intent can be expressed as a composition of behaviors:
 
 ```rust
 fn initialize_device_init(device_init: PWDFDEVICE_INIT) -> PWDFDEVICE_INIT {
-    Handle::new(&device_init)
+    Handle::new(device_init.to_non_null())
         .with_filter()
         .with_pnp_setup(WdfDevicePnpPowerSetup {
             on_device_d0_entry: Some(on_device_d0_entry),
@@ -230,18 +230,6 @@ The result remains recognizably KMDF, while shifting the focus from imperative d
 ### Zero-cost
 
 swdk relies heavily on Rust generics, trait implementations and static dispatch. As a result, most abstractions provided by the framework exist only at compile time.
-
-Types such as:
-
-```rust
-Handle<WDFDEVICE>
-Handle<WDFIOTARGET>
-
-WdfObjAttrs<DeviceContext>
-
-IoCtlRequest<MyRequest>
-IoCtlResponse<MyResponse>
-```
 
 carry additional semantic information for the compiler while introducing little to no runtime overhead.
 
