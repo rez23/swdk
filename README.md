@@ -30,23 +30,14 @@ They are the formal operators of SWDK’s meta-WDF language: they describe how W
 
 
 ```rust
-use swdk::bd::{WdfDriverConf, WdfDriverSetup, WdfObjAttrs};
-use swdk::ctx::WdfCtxNoneDesc;
-use swdk::op::{AsRaw, AsWdfOwned, AsWdfOwner};
-use swdk::rt::wdk_sys::{
-    NTSTATUS, PCUNICODE_STRING, PDRIVER_OBJECT, PWDFDEVICE_INIT,
-    STATUS_SUCCESS, WDFDEVICE, WDFDRIVER,
-};
-use swdk::{Handle, if_nterror_return_ntstatus, info};
-
 #[unsafe(export_name = "DriverEntry")]
 pub unsafe extern "system" fn driver_entry(
     driver_obj: PDRIVER_OBJECT,
     registry_path: PCUNICODE_STRING,
 ) -> NTSTATUS {
-    if_nterror_return_ntstatus!(
-        Handle::<WDFDRIVER>::from_owned_with_attrs(
-            driver_obj.to_non_null(),
+    unwrap_nt!(
+        Handle::<WDFDRIVER__>::from_kernel(
+            Handel::new(driver_obj.to_non_null()),
             WdfDriverConf {
                 setup: WdfDriverSetup {
                     on_device_add: Some(on_device_add),
@@ -65,7 +56,7 @@ unsafe extern "C" fn on_device_add(
     _driver: WDFDRIVER,
     device_init: PWDFDEVICE_INIT,
 ) -> NTSTATUS {
-    if_nterror_return_ntstatus!(
+    unwrap_nt!(
         Handle::<WDFDEVICE__>::from_kernel(
             device_init.to_non_null(),
             Some(WdfObjAttrs::<WdfCtxNoneDesc>::default()),
