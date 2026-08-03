@@ -199,14 +199,13 @@ WdfDeviceInitSetPnpPowerEventCallbacks(
 With swdk, the same intent can be expressed as a composition of behaviors:
 
 ```rust
-fn initialize_device_init(device_init: PWDFDEVICE_INIT) -> PWDFDEVICE_INIT {
-    Handle::new(device_init.to_non_null())
+fn initialize_device_init(device_init: PWDFDEVICE_INIT) {
+    let device_init = Handle::new(device_init.to_non_null())
         .with_filter()
         .with_pnp_setup(WdfDevicePnpPowerSetup {
             on_device_d0_entry: Some(on_device_d0_entry),
             ..Default::default()
-        })
-        .raw()
+        });
 }
 
 fn on_device_d0_entry(...) {
