@@ -2,9 +2,8 @@ mod _values {
     use core::ffi::c_int;
 
     use num_enum::{IntoPrimitive, TryFromPrimitive};
-
+    use crate::bd::IoCtlCommand;
     use crate::NtStatus;
-    use crate::ioctl::commands::IoCtlCommand;
     use crate::op::IsWdfType;
     use crate::rt::wdk_sys::{
         NTSTATUS, WDF_IO_TARGET_STATE,
@@ -323,6 +322,10 @@ mod _values {
         ImpersonationIgnoreFailure = 131072,
     }
 
+    pub enum DeviceTargetBuffer {
+        Input,
+        Output,
+    }
     pub type NtResult<T = ()> = Result<T, NtStatus>;
 }
 

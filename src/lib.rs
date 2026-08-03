@@ -62,8 +62,8 @@ mod __public_api {
 
     /// Contains WDF context types
     pub use crate::wdf::context as ctx;
-    pub use crate::wdf::handle::{Handle, HandleMut};
-    pub use crate::wdf::ioctl;
+    pub use crate::wdf::handles::{Handle, HandleMut};
+    pub use crate::wdf::descriptors;
 
     /// Contains WDF operators
     pub use crate::wdf::operators as op;

@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 #[cfg(feature = "kmdf-runtime")]
 use std::{fs, io, path::Path};
 use std::fmt::format;
+use std::str::FromStr;
 #[cfg(feature = "kmdf-runtime")]
 use regex::Regex;
 
@@ -67,6 +68,13 @@ fn generate_single_match_branch(left: &str, right: &str) -> String {
 fn generate_nt_status_as_ntstatus_impl(
     statuses: &[NtStatusEntry],
 ) -> String {
+    let nt_entry_struct = String::from("\n\
+    #[derive(Debug, Copy, Clone)]\n\
+    struct NtStatusEntry2 {\n\
+        msg: &'static str,\n\
+        value: u32,\n\
+    }\n\
+    ");
     let nt_status_enum_decl_open = String::from("\n\
     #[derive(\n\
         Debug,\n\
@@ -77,7 +85,8 @@ fn generate_nt_status_as_ntstatus_impl(
     )]\n\
     pub enum NtStatus {\n");
     let nts_status_enum_decl_close = String::from("\
-       StatusNotWdfError((wdk_sys::NTSTATUS, core::option::Option<&'static str>)),\n\
+       Unregistered((wdk_sys::NTSTATUS, core::option::Option<&'static str>)),\n\
+       Success,\n\
     }\n\
     ");
 
@@ -85,7 +94,8 @@ fn generate_nt_status_as_ntstatus_impl(
     impl From<NtStatus> for wdk_sys::NTSTATUS {\n\
         fn from(status: NtStatus) -> Self {\n\
             match status {\n\
-                NtStatus::StatusNotWdfError((status, _)) => status,\n\
+                NtStatus::Unregistered((status, _)) => status,\n\
+                NtStatus::Success => 0,\n\
     ");
 
     let match_fn_declaration_with_impl_close = String::from("\n\
@@ -98,7 +108,8 @@ fn generate_nt_status_as_ntstatus_impl(
     impl From<wdk_sys::NTSTATUS> for NtStatus {\n\
         fn from(status: wdk_sys::NTSTATUS) -> Self {\n\
             match status {\n\
-                _ => NtStatus::StatusNotWdfError((status, core::option::Option::None)),\n\
+                _ => NtStatus::Unregistered((status, core::option::Option::None)),\n\
+                0 => NtStatus::Success,\n\
     ");
 
     let format_functions_impls = String::from("\
@@ -127,10 +138,11 @@ fn generate_nt_status_as_ntstatus_impl(
     let with_info_fn_def_open = String::from("\
         pub fn with_info(self, info: &'static str) -> Self {\n\
             match self {\n\
-                  NtStatus::StatusNotWdfError((ntstatus, _)) => NtStatus::StatusNotWdfError((\
+                  NtStatus::Unregistered((ntstatus, _)) => NtStatus::Unregistered((\
                       ntstatus, core::option::Option::Some(info)\
-                  )),\n"
-    );
+                  )),\n\
+                  NtStatus::Success => NtStatus::Success,\n\
+    ");
     let match_fn_close = String::from("\
         }\n\
     }\n\
@@ -148,13 +160,46 @@ fn generate_nt_status_as_ntstatus_impl(
     );
     let enum_nt_vals = generate_enum_def(statuses);
     let from_nt_to_nt_status = generate_matches(statuses, |value, name| {
-        (value, format!("NtStatus::{}(core::option::Option::None)", name.to_pascal_case()))
+        let raw = u32::from_str_radix(
+            value.trim_start_matches("0x"),
+            16,
+        )
+            .unwrap();
+        let signed = raw as i32;
+
+        if signed != 0 {
+            Some((signed.to_string(), format!("NtStatus::{}(core::option::Option::None)", name.to_pascal_case().replace("Status", ""))))
+        } else {
+            None
+        }
     });
     let from_nt_status_for_nt = generate_matches(statuses, |value, name| {
-        (format!("NtStatus::{}(_)", name.to_pascal_case()), value)
+        let raw = u32::from_str_radix(
+            value.trim_start_matches("0x"),
+            16,
+        )
+            .unwrap();
+        let signed = raw as i32;
+
+        if signed != 0 {
+            Some((format!("NtStatus::{}(_)", name.to_pascal_case().replace("Status", "")), signed.to_string()))
+        } else {
+            None
+        }
     });
     let with_info_match = generate_matches(statuses, |value, name| {
-        (format!("NtStatus::{}(_)", name.to_pascal_case()), format!("NtStatus::{}(core::option::Option::Some(info))", name.to_pascal_case()))
+        let raw = u32::from_str_radix(
+            value.trim_start_matches("0x"),
+            16,
+        )
+            .unwrap();
+        let signed = raw as i32;
+
+        if signed != 0 {
+            Some((format!("NtStatus::{}(_)", name.to_pascal_case().replace("Status", "")), format!("NtStatus::{}(core::option::Option::Some(info))", name.to_pascal_case().replace("Status", ""))))
+        } else {
+            None
+        }
     });
     let ntstatus_impl_close = String::from("}\n");
 
@@ -184,18 +229,29 @@ fn generate_nt_status_as_ntstatus_impl(
 }
 
 fn generate_enum_def(statuses: &[NtStatusEntry]) -> String {
-    statuses.iter().map(|status| {
-        // Enum
-        format!(
-            "    {}(core::option::Option<&'static str>),\n",
-            status.macro_name.to_pascal_case(),
-        )
+    statuses.iter().filter_map(|status| {
+        let raw = u32::from_str_radix(
+            status.value.trim_start_matches("0x"),
+            16,
+        ).unwrap();
+
+        let signed = raw as i32;
+
+        if (signed != 0) {
+            // Enum
+            Some(format!(
+                "    {}(core::option::Option<&'static str>),\n",
+                status.macro_name.to_pascal_case().replace("Status", "")
+            ))
+        } else {
+            None
+        }
     }).collect()
 }
-fn generate_matches(statuses: &[NtStatusEntry], op: impl Fn(String, String) -> (String, String)) -> String {
-    statuses.iter().map(|status| {
-        let (name, value) = op(status.value.clone(), status.macro_name.clone());
-        generate_single_match_branch(name.as_str(), value.as_str())
+fn generate_matches(statuses: &[NtStatusEntry], op: impl Fn(String, String) -> Option<(String, String)>) -> String {
+    statuses.iter().filter_map(|status| {
+        let (name, value) = op(status.value.clone(), status.macro_name.clone())?;
+        Some(generate_single_match_branch(name.as_str(), value.as_str()))
     }).collect()
 }
 #[cfg(feature = "kmdf-runtime")]

@@ -105,7 +105,7 @@ mod private {
         };
         #[cfg(feature = "test-runtime")]
         use crate::rt::wdk_sys;
-        use crate::wdf::handle::private::{
+        use crate::wdf::handles::private::{
             Handle, HandleMut,
         };
 
@@ -226,7 +226,7 @@ mod private {
                     WDF_NO_HANDLE, WDFOBJECT,
                 };
                 use crate::vals::NtResult;
-                use crate::wdf::handle::private::Handle;
+                use crate::wdf::handles::private::Handle;
 
                 impl<'a> Handle<'a, WDFOBJECT> {
                     pub fn allocate(
@@ -296,7 +296,7 @@ mod private {
                 #[cfg(feature = "test-runtime")]
                 use crate::rt::wdk_sys;
                 use crate::vals::NtResult;
-                use crate::wdf::handle::private::Handle;
+                use crate::wdf::handles::private::Handle;
                 impl IsWdfType for WDFDEVICE_INIT {}
 
                 impl<'a> Handle<'a, WDFDEVICE_INIT> {
@@ -357,7 +357,7 @@ mod private {
                         //         is valid because it is a WdfType
                         unsafe {
                             __cb::wdf_device_init_set_file_object_config(
-                                self.as_non_null().ok_or(NtStatus::StatusInternalError(
+                                self.as_non_null().ok_or(NtStatus::InternalError(
                                     Some("wdf_device_init_set_file_object_config(): invalid `WDFDEVICE_INIT`")
                                 ))?.as_ptr(),
                                 ptr::from_ref(&conf).cast_mut(),
@@ -390,7 +390,7 @@ mod private {
                     WDF_NO_HANDLE, WDFDEVICE,
                 };
                 use crate::vals::NtResult;
-                use crate::wdf::handle::private::Handle;
+                use crate::wdf::handles::private::Handle;
 
                 impl<'a> FromKernel<WDFDEVICE__>
                     for Handle<'a, WDFDEVICE__>
@@ -553,7 +553,7 @@ mod private {
                     WDF_NO_HANDLE, WDFDRIVER,
                 };
                 use crate::vals::NtResult;
-                use crate::wdf::handle::private::Handle;
+                use crate::wdf::handles::private::Handle;
 
                 impl IsWdfType for DRIVER_OBJECT {}
                 impl<'a> FromKernel<WDFDRIVER__>
@@ -629,11 +629,8 @@ mod private {
                     WDFREQUEST__,
                 };
 
-                use crate::bd::{
-                    WdfObjAttrs, WdfRequestSendOption,
-                };
-                use crate::ioctl::Describe;
-                use crate::ioctl::commands::IoCtlCommand;
+                use crate::bd::{IoCtlCommand, WdfObjAttrs, WdfRequestSendOption};
+                use crate::descriptors::Describe;
                 use crate::op::AsNonNull;
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::op::{
@@ -662,7 +659,7 @@ mod private {
                     IoCtlTargetSendInfo, NtResult,
                     WdfIoTargetError, WdfIoTargetState,
                 };
-                use crate::wdf::handle::private::Handle;
+                use crate::wdf::handles::private::Handle;
 
                 impl<'a> Handle<'a, WDFIOTARGET__> {
                     pub fn from_device(
@@ -998,7 +995,7 @@ mod private {
                 use crate::rt::wdk_sys;
                 use crate::rt::wdk_sys::WDF_NO_HANDLE;
                 use crate::vals::NtResult;
-                use crate::wdf::handle::private::Handle;
+                use crate::wdf::handles::private::Handle;
 
                 impl<'a> FromKernel<WDFQUEUE__> for Handle<'a, WDFQUEUE__> {
                     type Accessor = WDFDEVICE__;
@@ -1047,7 +1044,7 @@ mod private {
 
                         Ok(Self::new(
                             NonNull::new(queue).ok_or(
-                                NtStatus::StatusInternalError(
+                                NtStatus::InternalError(
                                     Some("wdf_io_queue_create(): invalid `WDFQUEUE`")
                                 )
                             )?,
@@ -1079,21 +1076,23 @@ mod private {
                 };
 
                 use crate::NtStatus;
-                use crate::ioctl::Describe;
+                use crate::descriptors::Describe;
                 use crate::op::{AsBuilder, AsNonNull};
                 #[cfg(feature = "kmdf-runtime")]
                 use crate::rt::__cb;
                 #[cfg(feature = "test-runtime")]
                 use crate::rt::wdk_sys;
                 use crate::rt::wdk_sys::NTSTATUS;
-                use crate::vals::NtResult;
-                use crate::wdf::handle::private::Handle;
+                use crate::vals::{
+                    NtResult, DeviceTargetBuffer,
+                };
+                use crate::wdf::handles::private::Handle;
 
                 impl<'a> Handle<'a, WDFREQUEST__> {
-                    pub fn complete(
+                    pub unsafe fn complete(
                         self,
                         status: NTSTATUS,
-                    ) -> Option<Self> {
+                    ) -> Option<()> {
                         #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_request_complete(
@@ -1103,12 +1102,12 @@ mod private {
                             )
                         };
 
-                        Some(self)
+                        Some(())
                     }
 
                     pub fn format_using_current_type(
-                        &mut self,
-                    ) -> Option<&Self> {
+                        self,
+                    ) -> Option<Self> {
                         #[cfg(feature = "kmdf-runtime")]
                         unsafe {
                             __cb::wdf_request_format_using_current_type(
@@ -1119,8 +1118,9 @@ mod private {
                         Some(self)
                     }
 
-                    pub fn get_input_buff<D: Default>(
+                    pub fn parse_buffer<D: Default>(
                         &self,
+                        target: DeviceTargetBuffer,
                     ) -> NtResult<Describe<D>>
                     {
                         let described =
@@ -1129,17 +1129,33 @@ mod private {
                             described.build();
                         let mut byte_read: usize = 0;
                         unsafe {
-                            __cb::wdf_request_get_input_buffer(
-                                self.as_non_null().ok_or(
-                                    NtStatus::from_nt_with_info(
-                                        STATUS_INTERNAL_ERROR,
-                                        "wdf_request_get_input_buffer(): invalid `WDFREQUEST__`",
+                            match target {
+                                DeviceTargetBuffer::Input => {
+                                    __cb::wdf_request_get_input_buffer(
+                                        self.as_non_null().ok_or(
+                                            NtStatus::from_nt_with_info(
+                                                STATUS_INTERNAL_ERROR,
+                                                "wdf_request_get_input_buffer(): invalid `WDFREQUEST__`",
+                                            )
+                                        )?.as_ptr(),
+                                        size_of::<D>(),
+                                        &raw mut descriptor,
+                                        &raw mut byte_read,
                                     )
-                                )?.as_ptr(),
-                                size_of::<D>(),
-                                &raw mut descriptor,
-                                &raw mut byte_read,
-                            )
+                                }
+                                DeviceTargetBuffer::Output => {
+                                    __cb::wdf_request_get_output_buffer(
+                                        self.as_non_null().ok_or(
+                                            NtStatus::from_nt_with_info(
+                                                STATUS_INTERNAL_ERROR,
+                                                "wdf_request_get_output_buffer(): invalid `WDFREQUEST__`",
+                                            )
+                                        )?.as_ptr(),
+                                        size_of::<D>(),
+                                        &raw mut descriptor,
+                                        &raw mut byte_read,
+                                    )
+                                }}
                         }?;
 
                         Ok(described)

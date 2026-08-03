@@ -378,6 +378,7 @@ pub struct WdfRequestSendOption {
     pub flags: WdfRequestSendOptionsFlags,
     pub timeout: c_ulonglong,
 }
+pub type IoCtlCommand = u32;
 
 impl Default for WdfRequestSendOption {
     fn default() -> Self {

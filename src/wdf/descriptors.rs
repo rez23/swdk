@@ -1,17 +1,4 @@
 mod private {
-    use crate::ioctl::private::commands::IoCtlCommand;
-
-    pub mod commands {
-
-        pub type IoCtlCommand = u32;
-
-        #[allow(dead_code)]
-        pub const IOCTL_HID_GET_COLLECTION_INFORMATION: IoCtlCommand =
-            0x000B_01A8; // Method Neither (106)
-
-        #[allow(dead_code)]
-        pub const IOCTL_HID_GET_PREPARSED_DATA: IoCtlCommand = 0x000B_001C; // Method Buffered (7)
-    }
     pub mod operations {
         use core::ptr;
         use crate::rt::wdk_sys::{
@@ -66,7 +53,7 @@ mod private {
     pub struct Describe<T>(T);
 
     mod buff_input_io {
-        use crate::ioctl::private::{operations, Describe};
+        use crate::descriptors::private::{operations, Describe};
         use crate::op::{AsBuff, AsBuilder, AsBuilderMut, AsNonNull, AsNonNullBuff, AsRawBuff, IsWdfType, ToNonNull};
         use core::ops::Deref;
         use core::ptr::NonNull;
@@ -141,5 +128,4 @@ mod private {
 
     }
 }
-pub use private::commands;
 pub use private::{Describe};

@@ -13,9 +13,13 @@ mod _operators {
     use crate::vals::NtResult;
 
     pub trait IsWdfType: Sized {
-        fn to_non_null(self) -> NonNull<Self> {
-            unsafe { NonNull::new_unchecked(ptr::from_ref(&self).cast_mut()) }
+        fn as_non_null(&self) -> NonNull<Self> {
+            unsafe { NonNull::new_unchecked(ptr::from_ref(self).cast_mut()) }
         }
+    }
+
+    pub unsafe trait IsRawPtrToNonNullWdfRes<T: IsWdfType> {
+        fn to_non_null(self)->NonNull<T>;
     }
     pub trait ToNonNull<T>: AsRef<T> + Sized {
         #[inline]

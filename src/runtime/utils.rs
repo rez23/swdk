@@ -42,7 +42,18 @@ mod private {
 
 #[cfg(feature = "kmdf-runtime")]
 mod __ntstatus {
+    use core::ptr::NonNull;
+    use crate::op::{IsRawPtrToNonNullWdfRes, IsWdfType};
+
     include!(concat!(env!("OUT_DIR"), "/wdkgen.rs"));
+
+    unsafe impl<T: IsWdfType> IsRawPtrToNonNullWdfRes<T> for *mut T {
+        fn to_non_null(self) -> NonNull<T> {
+            // SAFETY: Implementors of `IsRawPtrToNonNullWdfRes` guarantee that `self` is a
+            //         valid, non-null pointer to a live WDF object of type `T`.
+            unsafe { (*self).as_non_null() }
+        }
+    }
 }
 
 #[cfg(feature = "kmdf-runtime")]

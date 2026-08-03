@@ -1,7 +1,6 @@
 use std::ptr::{dangling, NonNull};
 use swdk::rt::wdk_sys::WDFIOTARGET__;
 use swdk::Handle;
-use swdk::ioctl::IoCtlRequest;
 use swdk::vals::WdfIoTargetState;
 
 use swdk::rt::wdk_sys::{

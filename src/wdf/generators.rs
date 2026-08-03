@@ -95,7 +95,7 @@ macro_rules! unwrap_nt {
     ($expr:expr) => {{
         match $expr {
             Ok(value) => value,
-            Err(ntstatus) => return ntstatus,
+            Err(ntstatus) => return ntstatus.into(),
         }
     }};
 
@@ -103,17 +103,13 @@ macro_rules! unwrap_nt {
         match $result {
             Ok(value) => value,
             Err(ntstatus) => {
-                let as_status = ntstatus.fmt_status();
-                let as_hex = ntstatus.fmt_hex();
-
                 $crate::error!(
-                    "Failure happens in '{}' with status '{}({})': '{}'",
+                    "Failure happens in '{}' with '{:?}': '{}'",
                     $crate::function_name!(),
-                    as_status,
-                    as_hex,
+                    ntstatus,
                     $msg,
                 );
-                return ntstatus;
+                return ntstatus.into();
             }
         }
     }};
@@ -122,16 +118,12 @@ macro_rules! unwrap_nt {
         match $result {
             Ok(value) => value,
             Err(ntstatus) => {
-                let as_status = ntstatus.fmt_status();
-                let as_hex = ntstatus.fmt_hex();
-
                 $crate::error!(
-                    "Failure happens in '{}' with status '{}({})'",
+                    "Failure happens in '{}' with '{:?}'",
                     $crate::function_name!(),
-                    as_status,
-                    as_hex,
+                    ntstatus,
                 );
-                return ntstatus;
+                return ntstatus.into();
             }
         }
     }};
